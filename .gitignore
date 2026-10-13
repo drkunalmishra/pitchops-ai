@@ -1,0 +1,19 @@
+# secrets & private data — never commit
+.env
+.env.*
+!.env.example
+inputs/
+*.xls
+*.xlsx
+data/private/
+exports/
+*.json.key
+*-sa.json
+# build / env
+node_modules/
+.next/
+out/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
