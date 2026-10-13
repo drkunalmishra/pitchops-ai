@@ -1,0 +1,84 @@
+{
+  "table": "persona_ratings",
+  "fields": [
+    {
+      "name": "persona_db_version",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "entity_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "entity_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "opi_median",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "opi_p75",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ces_median",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "engagement_rate_median",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "evidence_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "channel_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "compliance_risk_rate",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "confidence",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "score",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "rating_band",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "persona_db_version",
+    "entity_type"
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "a": {
+    "run_id": "smoke-20261013T123449-391d62",
+    "ok": true,
+    "video_id": "6iTGbx5BP_s",
+    "tokens_in": 1170,
+    "tokens_out": 318,
+    "cost_usd_est": 0.001539,
+    "latency_ms": 8619,
+    "model_id": "gemini-3.8-flash",
+    "attempts": 1,
+    "output": {
+      "summary_3_sentences": "A woman dressed in elegant attire walks past the sleek island in a modern, luxury kitchen. She steps out through large sliding glass doors onto a spacious patio overlooking an outdoor landscaped area. The camera follows her onto the terrace as she turns to admire the sunny exterior view.",
+      "on_screen_text": [],
+      "last_timestamp_seen_sec": 11.0
+    }
+  },
+  "b": {
+    "run_id": "smoke-20261013T123449-391d62",
+    "ok": true,
+    "video_id": "nGf2TF-R2HE",
+    "offsets_accepted_by_api": true,
+    "offsets_honoured": true,
+    "token_ratio_offset_vs_full": 0.274,
+    "offset_call": {
+      "tokens_in": 11088,
+      "tokens_out": 680,
+      "cost_usd_est": 0.007584,
+      "latency_ms": 14396,
+      "model_id": "gemini-3.8-flash",
+      "attempts": 1,
+      "last_ts": 120.0
+    },
+    "full_call": {
+      "tokens_in": 40476,
+      "tokens_out": 1293,
+      "cost_usd_est": 0.024117,
+      "latency_ms": 25329,
+      "model_id": "gemini-3.8-flash",
+      "attempts": 1,
+      "last_ts": 442
+    }
+  },
+  "c": {
+    "run_id": "smoke-20261013T123449-391d62",
+    "ok": true,
+    "tokens_in": 261,
+    "tokens_out": 91,
+    "cost_usd_est": 6.25e-05,
+    "latency_ms": 1138,
+    "model_id": "gemini-3.5-flash-lite",
+    "attempts": 1,
+    "output": {
+      "topic": "Real estate investment and property listing",
+      "property_type": "apartment",
+      "seller_tactics": [
+        "High ROI claim",
+        "Flexible payment plan",
+        "Scarcity",
+        "Golden visa incentive",
+        "Call to action"
+      ],
+      "language": "English",
+      "confidence": 0.98
+    }
+  },
+  "d": {
+    "run_id": "smoke-20261013T123353-386fd5",
+    "ok": true,
+    "model_id": "gemini-embedding-001",
+    "dimension": 3072,
+    "n": 2,
+    "latency_ms": 4274
+  },
+  "f": {
+    "run_id": "smoke-20261013T123353-386fd5",
+    "ok": true,
+    "voice": "en-US-Neural2-A",
+    "bytes": 37440,
+    "gcs_uri": "gs://pitchops-ai-2026-pitchops/tmp/smoke/smoke-20261013T123353-386fd5.mp3"
+  },
+  "g": {
+    "run_id": "smoke-20261013T123353-386fd5",
+    "ok": true,
+    "database": "pitchops",
+    "write": true,
+    "read": true,
+    "delete": true
+  },
+  "_media_resolution": "MediaResolution.MEDIA_RESOLUTION_LOW",
+  "_note": "cost_usd_est values are estimates from token counts x price table in pitchops/config.py"
+}

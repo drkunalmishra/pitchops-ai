@@ -1,0 +1,16 @@
+.env
+.env.*
+inputs/
+data/private/
+exports/
+*.xls
+*.xlsx
+.git/
+.venv/
+web/
+node_modules/
+docs/
+tests/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

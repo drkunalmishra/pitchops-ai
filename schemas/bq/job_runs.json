@@ -1,0 +1,48 @@
+{
+  "table": "job_runs",
+  "fields": [
+    {
+      "name": "job",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "started_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ended_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "status",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "counters",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "error",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "job"
+  ]
+}

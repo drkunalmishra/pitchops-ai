@@ -1,0 +1,19 @@
+# Uploaded to Cloud Build. NEVER upload secrets or broker files.
+.gcloudignore
+.git/
+.gitignore
+.env
+.env.*
+inputs/
+data/private/
+exports/
+*.xls
+*.xlsx
+.venv/
+web/
+**/node_modules/
+docs/
+**/__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

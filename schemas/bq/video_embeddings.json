@@ -1,0 +1,38 @@
+{
+  "table": "video_embeddings",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "layer",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "embedding",
+      "type": "FLOAT64",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "model_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "layer"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "table": "persona_links",
+  "fields": [
+    {
+      "name": "persona_db_version",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "link_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "seller_persona_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "buyer_persona_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "presenter_persona_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "evidence_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "example_video_ids",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "persona_db_version"
+  ]
+}

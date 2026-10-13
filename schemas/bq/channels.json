@@ -1,0 +1,88 @@
+{
+  "table": "channels",
+  "fields": [
+    {
+      "name": "channel_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "title",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "handle",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "uploads_playlist_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "subscriber_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "video_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "view_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "country",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "company_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "broker_number",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "match_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "harvest_status",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "next_page_token",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "last_harvested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "channel_id"
+  ]
+}

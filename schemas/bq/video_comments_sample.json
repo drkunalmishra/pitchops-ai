@@ -1,0 +1,48 @@
+{
+  "table": "video_comments_sample",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "comment_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "text",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "like_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "intent_label",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "intent_score",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "video_id"
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "table": "llm_calls",
+  "fields": [
+    {
+      "name": "ts",
+      "type": "TIMESTAMP",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "job",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "model_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "prompt_version",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "tokens_in",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "tokens_out",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "cost_usd_est",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "latency_ms",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "status",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "model_id"
+  ],
+  "time_partitioning": {
+    "field": "ts",
+    "type": "DAY"
+  }
+}

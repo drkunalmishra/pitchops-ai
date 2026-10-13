@@ -1,0 +1,1 @@
+"""PitchOps AI core package."""

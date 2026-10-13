@@ -1,0 +1,47 @@
+{
+  "table": "video_metrics_daily",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "snapshot_date",
+      "type": "DATE",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "view_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "like_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "comment_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "video_id"
+  ],
+  "time_partitioning": {
+    "field": "snapshot_date",
+    "type": "DAY"
+  }
+}

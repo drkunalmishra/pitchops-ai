@@ -1,0 +1,58 @@
+{
+  "table": "brokers",
+  "fields": [
+    {
+      "name": "broker_number",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "name_en",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "name_ar",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "office_name_en",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "office_name_ar",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "company_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "email_domain",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "is_corporate_email",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "company_id"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "table": "video_persona_tags",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "layer",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "tag_code",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "weight",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "evidence",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "source_tier",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "layer",
+    "tag_code"
+  ]
+}

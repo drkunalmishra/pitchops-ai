@@ -1,0 +1,68 @@
+{
+  "table": "video_tags_tier2",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "prompt_version",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "model_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "topic",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "property_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "seller_tactics",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "buyer_persona_hints",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "presenter_format_guess",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "language",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "confidence",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "video_id"
+  ]
+}

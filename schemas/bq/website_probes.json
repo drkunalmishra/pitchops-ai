@@ -1,0 +1,58 @@
+{
+  "table": "website_probes",
+  "fields": [
+    {
+      "name": "domain",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "url_fetched",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "http_status",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "robots_allowed",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "youtube_links",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "social_links",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "fetched_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "error",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "domain"
+  ]
+}

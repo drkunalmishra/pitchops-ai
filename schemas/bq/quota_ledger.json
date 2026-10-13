@@ -1,0 +1,47 @@
+{
+  "table": "quota_ledger",
+  "fields": [
+    {
+      "name": "ts",
+      "type": "TIMESTAMP",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "day_pt",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "method",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "units",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "job",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ],
+  "clustering": [
+    "day_pt"
+  ],
+  "time_partitioning": {
+    "field": "ts",
+    "type": "DAY"
+  }
+}
