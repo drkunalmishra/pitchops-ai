@@ -1,0 +1,64 @@
+{
+  "table": "finops_ledger",
+  "fields": [
+    {
+      "name": "ledger_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "date",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "phase",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "stage",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "provider",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "units",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "unit_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "est_cost_usd",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ts",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "phase",
+    "provider"
+  ]
+}

@@ -8,11 +8,11 @@ from pitchops.gemini.client import estimate_cost
 
 
 class FakeSpend:
-    def __init__(self, total: float, today: float) -> None:
-        self.total, self.today = total, today
+    def __init__(self, total: float, today: float, phase: float = 0.0) -> None:  # type: ignore[no-redef]
+        self.total, self.today, self.phase = total, today, phase
 
-    def spend(self, day_ist: date) -> tuple[float, float]:
-        return self.total, self.today
+    def spend(self, day_ist: date, phase_prefix: str | None = None) -> tuple[float, float, float]:
+        return self.total, self.today, self.phase
 
 
 def test_under_budget_ok() -> None:
@@ -48,3 +48,9 @@ def test_cost_estimate_families() -> None:
     assert estimate_cost(s, "gemini-3.5-flash-lite", 1_000_000, 1_000_000) == 0.5
     s2 = Settings(gcp_project_id="x", price_per_mtok_json='{"m": [1, 2]}', _env_file=None)
     assert estimate_cost(s2, "m", 1_000_000, 1_000_000) == 3.0
+
+
+def test_phase_cap() -> None:
+    with pytest.raises(BudgetExhausted, match="phase"):
+        GeminiBudget(FakeSpend(31, 5, 30.0), 60, 25, phase_prefix="p3_", phase_cap=30).check()
+    GeminiBudget(FakeSpend(31, 5, 10.0), 60, 25, phase_prefix="p3_", phase_cap=30).check()

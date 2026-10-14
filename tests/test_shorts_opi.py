@@ -44,3 +44,11 @@ def test_missing_likes_reduces_confidence() -> None:
 def test_no_views_no_score() -> None:
     s = score_videos([vid(1, None)], date(2026, 10, 14))[0]
     assert s["opi"] is None and s["opi_confidence"] == 0
+
+
+def test_f4_from_comment_intent() -> None:
+    vids = [vid(i, 100 * (i + 1)) for i in range(40)]
+    for i, x in enumerate(vids):
+        x["intent_rate"] = i / 100
+    s = {x["video_id"]: x for x in score_videos(vids, date(2026, 10, 14))}
+    assert s["v10"]["f4"] == 0.1 and s["v10"]["opi_confidence"] == 1.0

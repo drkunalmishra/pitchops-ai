@@ -183,3 +183,30 @@ All tables carry `ingested_at` and `run_id`.
 - Use structured JSON logs. Never log keys or full emails.
 - When a quota or budget limit is hit, persist progress, exit 0 with `QUOTA_EXHAUSTED` / `BUDGET_EXHAUSTED`, and resume on the next run.
 - Time is short: prefer the simplest working version, and leave polish for later phases.
+
+---
+
+## 11. Decisions log (binding — added 14 Oct 2026, after P2)
+
+- **D1 · No new channel discovery.** The channel set is closed at the P2 result (1,108 accepted). Do not run discover / search.list again. YouTube quota is reserved for (a) harvesting the remaining un-harvested accepted channels, (b) metric refresh, (c) comment sampling for analysed videos.
+- **D2 · Analysis window = last 24 months only.** Every analysis stage (Tier 2, Tier 3, comments, personas, ratings, reports) considers only videos with `published_at >= CURRENT_DATE - 730 days` (and older than 3 days, so metrics are mature). Older videos stay stored for channel baselines only.
+- **D3 · Irrelevant content is FLAGGED, never deleted.** Add `is_relevant BOOL`, `relevance_reason STRING`, `relevance_source STRING` (tier2 | rule | manual) at video level and `is_relevant BOOL`, `irrelevant_share FLOAT64`, `relevance_reason STRING` at channel level. Videos not about Dubai/UAE real estate → `is_relevant=false`. Channels whose in-window videos are mostly irrelevant → channel `is_relevant=false` (threshold to be confirmed). **Every downstream query, view, score, persona, rating, report and UI must exclude `is_relevant = false` rows by default** (expose them only in an admin/QA view). Nothing is removed from BigQuery.
+- Pending: more scope input from the owner (spec "Dubai Real Estate Social Video Intelligence Platform", YouTube-only subset). Do not start P3 until the P3 prompt is issued.
+- **D4 · Full hackathon playbook stays in scope**, with a new final phase: property selection → scripts → compliance → approval → media generation (walkthroughs + digital-avatar presenter). Details in the phase prompts.
+- **D5 · Persona DB = aggregation of per-video labels** (sales framework × buyer persona × format, + motive/trigger/origin), rated on views/OPI, trending, Sales Pressure and comment buying-intent. No embedding clustering required.
+- **D6 · Taxonomy = owner's spec lists as the MINIMUM** (13 archetypes, hook types, 10 sales frameworks, 9 buyer personas, segment/claim types), expanded with: buyer motive (invest/settle/both), trigger (fomo, visa, yield, capital_growth, family, lifestyle, safety, tax, status), origin persona (Indian/NRI, CIS/Russian, GCC, European/UK, Chinese/Asian, African, other).
+- **D7 · Deep analysis scope = top 10 trending videos (last 24 months, relevant only) for a shortlist of ~50 companies.** Text tagging (Tier 2) still covers all relevant last-24-month videos.
+- **D8 · Long videos (> 5 min)** are analysed from 3 clips: first 2 min + 1 min from the middle + last 2 min; coverage marked `partial`. Videos ≤ 5 min are analysed in full.
+- **D9 · Relevance rule:** relevant = UAE real estate only (no non-UAE projects, no team-culture/motivation/generic content). Channel `is_relevant=false` if > 60% of its last-24-month videos are irrelevant OR it has < 3 relevant videos.
+- **D10 · Comments** collected for every deep-analysed video (YouTube API, PII hashed/redacted).
+- **D11 · Company reports for as many companies as possible** (full reports where deep analysis exists).
+- **D12 · Individual broker channels:** include only if their videos are already harvested; otherwise defer.
+- **D13 · Personal project.** No employer, practice or internal-governance references anywhere in code, docs, prompts, UI or deck.
+- **D14 · FinOps is mandatory in every phase:** cost estimate printed before any paid run, per-stage budget caps, spend logged per call, daily cost report, and a cumulative FinOps dashboard.
+- **D15 · Media budget ≈ $120, total project cap $200** ($100 buffer kept so the trial never runs out during judging). Media is the LAST phase.
+- **D16 · Every media video needs owner approval in the web app** (plan → cost estimate → Approve → render). No render without an approval record.
+- **D17 · 8 fictional bilingual avatars** (Imagen portrait + Veo animation; speak intro/outro in English; TTS narration in between): Indian, Middle Eastern, North American, East Asian, African, Russian, European, South American. Fictional only — must not resemble real people.
+- **D18 · 40 demo videos = 40 different properties:** 20 × 16:9 walkthroughs (≤ 2 min) + 20 × 9:16 Shorts (≤ 1 min). Images from developer/project websites (robots.txt respected; owner may add images manually). Images and rendered media stay private (never in the public repo).
+- **D19 · Branding:** fictional "PitchOps Demo Realty", placeholder permit "DEMO-PERMIT", no real Madmoun QR. No extra on-video disclaimer required (demo use only).
+- **D20 · Scripts English only.** ~100 scripts: top ~25 most-discussed properties × 3–4 buyer-persona angles, plus one script for each of the 40 video properties.
+- **D21 · Deep-analysis shortlist** = top ~50 companies by total views of relevant last-24-month videos. Full reports for those 50; light reports (text-tag + metrics based) for all other relevant companies.

@@ -52,6 +52,51 @@
       "mode": "NULLABLE"
     },
     {
+      "name": "is_relevant",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "relevance_reason",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "archetype_guess",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sales_frameworks_guess",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "buyer_personas_guess",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "buyer_motive_guess",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "triggers_guess",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "origin_personas_guess",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "property_mentions",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
       "name": "ingested_at",
       "type": "TIMESTAMP",
       "mode": "NULLABLE"

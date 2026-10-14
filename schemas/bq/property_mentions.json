@@ -1,0 +1,73 @@
+{
+  "table": "property_mentions",
+  "fields": [
+    {
+      "name": "mention_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "source_tier",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "project_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "project_key",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "developer",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "area",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "emirate",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "property_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "price_text",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ts_sec",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "project_key"
+  ]
+}

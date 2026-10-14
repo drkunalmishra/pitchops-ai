@@ -1,0 +1,73 @@
+{
+  "table": "comments",
+  "fields": [
+    {
+      "name": "comment_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "parent_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "is_reply",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "author_hash",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "author_is_owner",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "text_redacted",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "redaction_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "like_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "reply_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "published_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "video_id"
+  ]
+}

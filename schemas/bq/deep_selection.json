@@ -1,0 +1,53 @@
+{
+  "table": "deep_selection",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "company_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "channel_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "rank_in_company",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "trending",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "outlier",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "reason",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "company_id"
+  ]
+}

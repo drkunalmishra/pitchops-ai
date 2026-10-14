@@ -1,0 +1,68 @@
+{
+  "table": "video_metrics_derived",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "prompt_version",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "evidence_density",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sourced_claim_share",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "education_to_sales",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "pitch_share",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sales_pressure_score",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "verification_status",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "claims_total",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "claims_risky",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "video_id"
+  ]
+}

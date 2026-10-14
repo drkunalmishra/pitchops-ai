@@ -57,6 +57,31 @@
       "mode": "NULLABLE"
     },
     {
+      "name": "is_relevant",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "relevance_reason",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "relevance_source",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "in_window",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "is_short_candidate",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
       "name": "ingested_at",
       "type": "TIMESTAMP",
       "mode": "NULLABLE"

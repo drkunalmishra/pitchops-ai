@@ -1,0 +1,53 @@
+{
+  "table": "company_shortlist",
+  "fields": [
+    {
+      "name": "company_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "rank",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "company_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "total_views",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "relevant_videos",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "channels",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "selected_videos",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "company_id"
+  ]
+}

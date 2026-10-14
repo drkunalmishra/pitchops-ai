@@ -20,8 +20,9 @@ def main(argv: list[str] | None = None) -> int:
     with job_run("score", run_id, dry_run=a.dry_run) as c:
         rows = query(f"""
             SELECT v.video_id, v.channel_id, v.is_short, v.duration_sec, v.published_at,
-                   m.view_count, m.like_count, m.comment_count, m.snapshot_date
-            FROM `{t('videos')}` v
+                   m.view_count, m.like_count, m.comment_count, m.snapshot_date, s.intent_rate
+            FROM `{t('v_videos_relevant')}` v  -- D2/D3: in-window, relevant videos of relevant channels only
+            LEFT JOIN `{t('audience_summaries')}` s USING (video_id)
             JOIN (SELECT * FROM `{t('video_metrics_daily')}`
                   QUALIFY ROW_NUMBER() OVER (PARTITION BY video_id ORDER BY snapshot_date DESC) = 1) m
             USING (video_id)""")

@@ -64,11 +64,13 @@ class CallResult:
 
 class GeminiClient:
     def __init__(self, job: str, run_id: str, settings: Settings | None = None,
-                 budget: GeminiBudget | None = None, log_to_bq: bool = True) -> None:
+                 budget: GeminiBudget | None = None, log_to_bq: bool = True,
+                 phase_prefix: str | None = None, phase_cap: float | None = None) -> None:
         self.s = settings or get_settings()
         self.job, self.run_id, self.log_to_bq = job, run_id, log_to_bq
         self.budget = budget or GeminiBudget(BigQuerySpendStore(), self.s.gemini_budget_usd,
-                                             self.s.gemini_daily_usd)
+                                             self.s.gemini_daily_usd, phase_prefix=phase_prefix,
+                                             phase_cap=phase_cap, ttl_s=20.0)
         self.client = genai.Client(vertexai=True, project=self.s.gcp_project_id, location=self.s.gemini_location)
         self.embed_client = genai.Client(vertexai=True, project=self.s.gcp_project_id, location=self.s.gcp_region)
 
@@ -112,10 +114,14 @@ class GeminiClient:
 
     # ---- JSON with schema validation + one repair --------------------------------------------
     def generate_json(self, model: str, contents: Any, schema: dict[str, Any], media_resolution: str = "low",
-                      prompt_version: str = "adhoc", temperature: float = 0.2) -> CallResult:
+                      prompt_version: str = "adhoc", temperature: float = 0.2, system: str | None = None,
+                      thinking: str | None = None, validator: Any = None) -> CallResult:
+        """thinking: None (model default) or a Gemini 3 thinking level such as "minimal" / "low".
+        validator: optional callable(data) -> list[str] of extra semantic errors (empty = valid)."""
         cfg = types.GenerateContentConfig(
             response_mime_type="application/json", response_json_schema=schema,
-            media_resolution=MEDIA_RES[media_resolution], temperature=temperature)
+            media_resolution=MEDIA_RES[media_resolution], temperature=temperature, system_instruction=system,
+            thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel(thinking.upper())) if thinking else None)
         contents = contents if isinstance(contents, list) else [contents]
         tot_in = tot_out = tot_ms = 0
         tot_cost = 0.0
@@ -132,6 +138,9 @@ class GeminiClient:
             try:
                 data = json.loads(text)
                 jsonschema.validate(data, schema)
+                extra = validator(data) if validator else []
+                if extra:
+                    raise jsonschema.ValidationError("; ".join(extra)[:800])
                 return CallResult(data, tot_in, tot_out, round(tot_cost, 8), tot_ms, model, attempt, text)
             except (json.JSONDecodeError, jsonschema.ValidationError) as e:
                 last_err = f"{type(e).__name__}: {getattr(e, 'message', str(e))}"

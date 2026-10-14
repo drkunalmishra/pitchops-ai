@@ -72,6 +72,26 @@
       "mode": "NULLABLE"
     },
     {
+      "name": "is_relevant",
+      "type": "BOOL",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "irrelevant_share",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "relevant_video_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "relevance_reason",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
       "name": "ingested_at",
       "type": "TIMESTAMP",
       "mode": "NULLABLE"

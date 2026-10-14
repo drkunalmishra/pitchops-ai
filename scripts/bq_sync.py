@@ -55,6 +55,12 @@ def main() -> int:
         elif not relaxed:
             unchanged += 1
     print(f"tables: created={created} altered={altered} unchanged={unchanged}")
+    views_dir = Path(__file__).resolve().parents[1] / "schemas" / "bq_views"
+    for vp in sorted(views_dir.glob("*.sql")):
+        ref = f"{s.gcp_project_id}.{s.bq_dataset}.{vp.stem}"
+        sql = vp.read_text().format(dataset=f"{s.gcp_project_id}.{s.bq_dataset}")
+        bq.query(f"CREATE OR REPLACE VIEW `{ref}` AS\n{sql}").result()
+        print(f"VIEW     {vp.stem}")
     return 0
 
 

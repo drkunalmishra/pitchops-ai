@@ -1,0 +1,78 @@
+{
+  "table": "audience_summaries",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "data_status",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "comments_collected",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "comments_available",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sentiment_mix",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "intent_mix",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "persona_mix",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "buyer_intent_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "intent_rate",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "top_questions",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "objection_topics",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "owner_reply_rate",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "video_id"
+  ]
+}

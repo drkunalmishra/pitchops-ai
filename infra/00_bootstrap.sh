@@ -76,4 +76,14 @@ gcloud secrets add-iam-policy-binding YOUTUBE_API_KEY --member="serviceAccount:$
   --role=roles/secretmanager.secretAccessor --condition=None --quiet >/dev/null \
   && echo "  $SA_JOBS <- secretAccessor (secret)"
 
+step "Secret PII_HASH_PEPPER (32 random bytes, never printed)"
+if ! gcloud secrets describe PII_HASH_PEPPER >/dev/null 2>&1; then
+  python3 -c "import os,sys;sys.stdout.buffer.write(os.urandom(32))" | \
+    gcloud secrets create PII_HASH_PEPPER --replication-policy=automatic --data-file=- --quiet >/dev/null
+  echo "created"
+else echo "exists"; fi
+gcloud secrets add-iam-policy-binding PII_HASH_PEPPER --member="serviceAccount:$SA_JOBS" \
+  --role=roles/secretmanager.secretAccessor --condition=None --quiet >/dev/null \
+  && echo "  $SA_JOBS <- secretAccessor (PII_HASH_PEPPER)"
+
 bash "$(dirname "$0")/guardrails.sh"

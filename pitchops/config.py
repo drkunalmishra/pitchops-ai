@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     embedding_model_id: str = "gemini-embedding-001"
     gemini_budget_usd: float = 60.0
     gemini_daily_usd: float = 25.0
+    gemini_phase_budget_usd_p3: float = 30.0
+    total_project_cap_usd: float = 200.0
     # Optional JSON override: {"gemini-3.8-flash": [0.5, 3.0], ...}
     price_per_mtok_json: str = ""
 

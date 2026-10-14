@@ -3,7 +3,7 @@
 f1 = log(1 + V / max(A,1))          views per day of age
 f2 = (L + 4C) / max(V,1)            engagement rate (missing if likes hidden)
 f3 = log(1 + V / max(M,1))          vs creator median views (videos older than 7 days)
-f4 = I / max(T,1)                   intent comments — null until comments are sampled
+f4 = I / max(T,1)                   comment buying-intent rate (audience_summaries.intent_rate); null if unsampled
 N(f) = clip((f - P10) / (P90 - P10), 0, 1) within cohort (is_short, duration bucket)
 OPI = 100 * sum(w_i N_i) / sum(w_available);  confidence = available_weight * sample_quality
 """
@@ -54,7 +54,7 @@ def features(v: dict[str, Any], creator_median: float | None, snap: date) -> dic
         "f1": math.log1p(views / max(age, 1)),
         "f2": None if likes is None else (likes + 4 * (comments or 0)) / max(views, 1),
         "f3": None if not creator_median else math.log1p(views / max(creator_median, 1)),
-        "f4": None,
+        "f4": v.get("intent_rate"),
         "age": age,
     }
 

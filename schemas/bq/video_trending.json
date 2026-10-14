@@ -1,0 +1,73 @@
+{
+  "table": "video_trending",
+  "fields": [
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "channel_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "views",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "baseline",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "baseline_n",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "baseline_kind",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "outlier",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "eng_rate",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "z_eng",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "trending",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "computed_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "channel_id"
+  ]
+}

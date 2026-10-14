@@ -1,0 +1,78 @@
+{
+  "table": "comment_classifications",
+  "fields": [
+    {
+      "name": "comment_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "video_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "prompt_version",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "model_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sentiment",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "intent",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "buying_intent_score",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "persona_hint",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "topic",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "question",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "objection_topic",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "language",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "video_id"
+  ]
+}

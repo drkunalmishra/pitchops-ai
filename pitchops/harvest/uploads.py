@@ -136,7 +136,9 @@ def refresh_metrics(yt: YouTubeClient, run_id: str, limit: int | None = None) ->
     ids = [r["video_id"] for r in query(
         f"""SELECT v.video_id FROM `{t('videos')}` v LEFT JOIN `{t('video_metrics_daily')}` m
             ON m.video_id = v.video_id AND m.snapshot_date = @snapshot_date
-            WHERE m.video_id IS NULL""", {"snapshot_date": snapshot_date()})]
+            WHERE m.video_id IS NULL
+              AND v.published_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 730 DAY)  -- D2: last 24 months only
+              AND IFNULL(v.is_relevant, TRUE)""", {"snapshot_date": snapshot_date()})]
     ids = ids[:limit] if limit else ids
     sink = Sink(run_id)
     try:
