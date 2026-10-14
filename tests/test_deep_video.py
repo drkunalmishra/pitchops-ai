@@ -1,4 +1,4 @@
-from pitchops.analysis.deep_video import clips_for, derived_metrics, validate
+from pitchops.analysis.deep_video import clips_for, derived_metrics, normalize_mmss, validate
 
 
 def data(segs: list, claims: list | None = None, frameworks: list | None = None, hook: str = "question",
@@ -53,3 +53,17 @@ def test_derived_metrics() -> None:
 def test_derived_no_claims() -> None:
     m = derived_metrics(data([seg(0, 10, "neutral")]), 10)
     assert m["sourced_claim_share"] is None and m["verification_status"] == "no_claims" and m["sales_pressure_score"] == 0
+
+
+def test_normalize_mmss() -> None:
+    d = data([seg(0, 45), seg(45, 130), seg(130, 208)], [claim(115)])  # model wrote 1:30 as 130, 2:08 as 208
+    assert normalize_mmss(d, 128) is True
+    assert [s["end_sec"] for s in d["segments"]] == [45, 90, 128] and d["claims"][0]["ts_sec"] == 75
+    assert validate(d, 128, "full", [(0, 128)]) == []
+
+
+def test_normalize_mmss_leaves_valid_and_ambiguous_alone() -> None:
+    ok = data([seg(0, 60), seg(60, 120)])
+    assert normalize_mmss(ok, 120) is False and ok["segments"][1]["end_sec"] == 120
+    bad = data([seg(0, 175)])  # 175 has '75' seconds -> not MMSS -> no conversion
+    assert normalize_mmss(bad, 100) is False

@@ -31,13 +31,14 @@ def t(name: str) -> str:
     return get_settings().table(name)
 
 
-def pending(limit: int | None) -> list[dict[str, Any]]:
+def pending(limit: int | None, retry_review: bool = False) -> list[dict[str, Any]]:
+    done = "('succeeded')" if retry_review else "('succeeded', 'needs_review')"
     rows = query(f"""
         SELECT d.video_id, d.company_id, v.title, v.duration_sec
         FROM `{t('deep_selection')}` d
         JOIN `{t('v_videos_relevant')}` v USING (video_id)
         LEFT JOIN `{t('video_analysis')}` a ON a.video_id = d.video_id AND a.prompt_version = @pv
-             AND a.status IN ('succeeded', 'needs_review')
+             AND a.status IN {done}
         WHERE a.video_id IS NULL AND IFNULL(v.duration_sec, 0) > 0
         ORDER BY d.company_id, d.rank_in_company""", {"pv": deep_video.PROMPT_VERSION})
     return rows[:limit] if limit else rows
@@ -91,7 +92,8 @@ def analyse(g: Any, v: dict[str, Any]) -> dict[str, Any]:
         res = g.generate_json(s.gemini_model_flash, parts, deep_video.schema(), media_resolution="low",
                               prompt_version=deep_video.PROMPT_VERSION, temperature=0.2, system=deep_video.SYSTEM,
                               thinking="low",
-                              validator=lambda d: deep_video.validate(d, dur, coverage, clips))
+                              validator=lambda d: (deep_video.normalize_mmss(d, dur) and False)
+                              or deep_video.validate(d, dur, coverage, clips))
     except SchemaValidationFailed as e:
         return {**base, "status": "needs_review", "error": str(e)[:1000], "validation_errors": [str(e)[:300]],
                 "attempts": 2}
@@ -149,10 +151,11 @@ def apply_relevance_recheck() -> int:
 def main(argv: list[str] | None = None) -> int:
     p = base_parser("deep_analysis")
     p.add_argument("--estimate", action="store_true")
+    p.add_argument("--retry-review", action="store_true", help="also re-run videos currently in needs_review")
     a = p.parse_args(argv)
     run_id = a.run_id or new_run_id("deep")
     s = get_settings()
-    todo = pending(a.limit)
+    todo = pending(a.limit, a.retry_review)
     if a.estimate or a.dry_run:
         print(estimate(todo))
         return 0
@@ -177,7 +180,7 @@ def main(argv: list[str] | None = None) -> int:
                     ok += r["status"] == "succeeded"
                     review += r["status"] == "needs_review"
                     buf.append(r)
-                    if len(buf) >= 20:
+                    if len(buf) >= 5:
                         flush(buf, run_id)
                         buf = []
                         log("deep_progress", succeeded=ok, needs_review=review, failed=failed, of=len(todo),

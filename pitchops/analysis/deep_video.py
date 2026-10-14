@@ -112,7 +112,8 @@ Return four tables:
    DLD, a developer document or a named report is cited in the video), source_text, is_risky (guaranteed returns,
    unverifiable or misleading promises) and risk_note.
 4. property_mentions — each project / community / developer named, with timestamp and the price exactly as stated.
-Use only the allowed enum values. All timestamps are ABSOLUTE seconds from the start of the full video."""
+Use only the allowed enum values. All timestamps are ABSOLUTE seconds from the start of the full video, written as a
+plain number of seconds (1 min 30 s = 90, never 130 or "1:30")."""
 
 
 def clip_note(coverage: str, clips: list[tuple[int, int]], duration: int) -> str:
@@ -121,6 +122,34 @@ def clip_note(coverage: str, clips: list[tuple[int, int]], duration: int) -> str
     parts = "; ".join(f"clip {i + 1} = {a}-{b} s" for i, (a, b) in enumerate(clips))
     return (f"The video is {duration} s long. Only these clips are provided: {parts}. Report ABSOLUTE timestamps "
             "(e.g. 5 s into clip 2 is clip 2's start + 5). Segments must lie inside the clips.")
+
+
+def _all_ts(data: dict[str, Any]) -> list[tuple[dict[str, Any], str]]:
+    refs: list[tuple[dict[str, Any], str]] = [(data["overview"], "hook_end_sec")] if "overview" in data else []
+    refs += [(s, k) for s in data.get("segments", []) for k in ("start_sec", "end_sec")]
+    refs += [(c, "ts_sec") for c in data.get("claims", [])] + [(m, "ts_sec") for m in data.get("property_mentions", [])]
+    return refs
+
+
+def normalize_mmss(data: dict[str, Any], duration: int) -> bool:
+    """Gemini sometimes writes 1:30 as 130. If timestamps overflow the duration and every value >= 100 looks like
+    MMSS (last two digits < 60), convert all values >= 60 from MMSS to seconds — but only when that brings every
+    timestamp inside the duration. Mutates data in place; returns True if converted."""
+    refs = _all_ts(data)
+    vals = [float(o[k]) for o, k in refs]
+    if not vals or max(vals) <= duration + TS_TOLERANCE:
+        return False
+    if any(v >= 100 and int(v) % 100 >= 60 for v in vals):
+        return False
+
+    def conv(v: float) -> float:
+        return v if v < 60 else (int(v) // 100) * 60 + (v - int(v) // 100 * 100)
+
+    if max(conv(v) for v in vals) > duration + TS_TOLERANCE:
+        return False
+    for o, k in refs:
+        o[k] = conv(float(o[k]))
+    return True
 
 
 def validate(data: dict[str, Any], duration: int, coverage: str, clips: list[tuple[int, int]]) -> list[str]:
