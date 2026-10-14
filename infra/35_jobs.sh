@@ -9,10 +9,10 @@ ENVS="GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=$REGION,FIRESTORE_DATABASE=$FS_DB,CO
 ENVS="$ENVS,GEMINI_LOCATION=$(env_get GEMINI_LOCATION global),GEMINI_MODEL_FLASH=$(env_get GEMINI_MODEL_FLASH)"
 ENVS="$ENVS,GEMINI_BUDGET_USD=$(env_get GEMINI_BUDGET_USD 60),GEMINI_DAILY_USD=$(env_get GEMINI_DAILY_USD 25)"
 
-# discover defaults trimmed after the first sweep: harvest gets quota priority (20 company + 10 keyword searches = 3,000 units)
+# discover defaults trimmed after the first sweep: harvest gets quota priority (10 company searches = 1,000 units; corpus already has 700+ channels)
 job_args() {
   case "$1" in
-    discover) echo "-m,jobs.discover,--searches,20,--kw-searches,10" ;;
+    discover) echo "-m,jobs.discover,--searches,10,--kw-searches,0" ;;
     *) echo "-m,jobs.$1" ;;
   esac
 }

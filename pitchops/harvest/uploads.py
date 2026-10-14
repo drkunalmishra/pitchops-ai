@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import httpx
+
 from pitchops.bq import merge_rows, query
 from pitchops.config import get_settings
 from pitchops.harvest.shorts import classify, iso_duration_sec
@@ -86,35 +88,43 @@ def harvest_uploads(yt: YouTubeClient, run_id: str, limit: int | None = None) ->
     sink = Sink(run_id)
     chans = channels_to_harvest(limit)
     log("harvest_start", channels=len(chans))
+    ch: dict[str, Any] | None = None
+    token: str | None = None
     try:
         for ch in chans:
             token, got = ch.get("next_page_token"), int(ch.get("have") or 0)
             status = "partial"
-            while True:
-                page = yt.playlist_items(ch["uploads_playlist_id"], token)
-                ids = [i["contentDetails"]["videoId"] for i in page.get("items", [])]
-                if ids:
-                    sink.add(yt.videos_by_ids(ids))
-                got += len(ids)
-                token = page.get("nextPageToken")
-                if not token or got >= MAX_VIDEOS_PER_CHANNEL:
-                    status = "done"
-                    break
+            try:
+                while True:
+                    page = yt.playlist_items(ch["uploads_playlist_id"], token)
+                    ids = [i["contentDetails"]["videoId"] for i in page.get("items", [])]
+                    if ids:
+                        sink.add(yt.videos_by_ids(ids))
+                    got += len(ids)
+                    token = page.get("nextPageToken")
+                    if not token or got >= MAX_VIDEOS_PER_CHANNEL:
+                        status = "done"
+                        break
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code not in (403, 404):
+                    raise
+                # uploads playlist missing / private: skip this channel, keep going
+                log("uploads_unavailable", severity="WARNING", channel_id=ch["channel_id"],
+                    http_status=e.response.status_code)
+                status, token = "unavailable", None
             sink.checkpoints.append({"channel_id": ch["channel_id"], "harvest_status": status,
                                      "next_page_token": token if status == "partial" else None,
                                      "last_harvested_at": datetime.now(UTC).isoformat()})
             sink.flush()
     except QuotaExhausted:
         # persist the in-flight channel as partial so the next run resumes from its token
-        if "ch" in locals():
+        if ch is not None:
             sink.checkpoints.append({"channel_id": ch["channel_id"], "harvest_status": "partial",
                                      "next_page_token": token, "last_harvested_at": datetime.now(UTC).isoformat()})
         sink.flush(force=True)
         raise
-    except Exception as e:
-        if getattr(e, "response", None) is not None and e.response.status_code == 404:  # type: ignore[attr-defined]
-            log("uploads_404", severity="WARNING", channel_id=ch["channel_id"])
-        sink.flush(force=True)
+    except Exception:
+        sink.flush(force=True)  # keep everything harvested so far
         raise
     sink.flush(force=True)
     return sink.totals
