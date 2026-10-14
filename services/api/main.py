@@ -10,9 +10,10 @@ from datetime import UTC, datetime
 from typing import Any
 
 import firebase_admin
-from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from firebase_admin import auth as fb_auth
+from pydantic import BaseModel
 
 from pitchops.config import get_settings
 from pitchops.youtube.quota import day_pt
@@ -79,13 +80,22 @@ def corpus_stats() -> dict[str, Any]:
           (SELECT COUNT(*) FROM `{t('brokers')}`) AS brokers,
           (SELECT COUNT(*) FROM `{t('companies')}`) AS companies,
           (SELECT COUNT(*) FROM `{t('channels')}`) AS channels,
+          (SELECT COUNT(*) FROM `{t('channel_candidates')}`) AS candidates,
+          (SELECT COUNTIF(decision = 'review') FROM `{t('channel_matches')}`) AS review_queue,
           (SELECT COUNT(*) FROM `{t('videos')}`) AS videos,
           (SELECT COUNTIF(is_short) FROM `{t('videos')}`) AS shorts,
+          (SELECT COUNTIF(NOT is_short) FROM `{t('videos')}`) AS long_form,
           (SELECT COALESCE(SUM(units),0) FROM `{t('quota_ledger')}` WHERE day_pt = @d) AS quota_units_today,
           (SELECT COALESCE(SUM(cost_usd_est),0) FROM `{t('llm_calls')}`) AS gemini_spend_usd_est,
           (SELECT COUNT(*) FROM `{t('llm_calls')}`) AS gemini_calls""",
         {"d": day_pt().isoformat()},
     )[0]
+    row["channels_by_match_type"] = query(
+        f"SELECT IFNULL(match_type,'?') AS k, COUNT(*) AS n FROM `{t('channels')}` GROUP BY 1 ORDER BY 2 DESC")
+    row["channels_by_route"] = query(
+        f"""SELECT r AS k, COUNT(DISTINCT c.channel_id) AS n FROM `{t('channels')}` c
+            JOIN `{t('channel_candidates')}` cc USING (channel_id), UNNEST([cc.source_route]) r
+            GROUP BY 1 ORDER BY 2 DESC""")
     data = {**row, "gemini_spend_usd_est": round(float(row["gemini_spend_usd_est"]), 4),
             "quota_cap": settings.yt_daily_unit_cap, "gemini_budget_usd": settings.gemini_budget_usd,
             "as_of": datetime.now(UTC).isoformat()}
@@ -99,6 +109,63 @@ v1 = APIRouter(dependencies=[Depends(require_user)])
 @v1.get("/corpus/stats")
 def get_corpus_stats() -> dict[str, Any]:
     return corpus_stats()
+
+
+
+
+# ---- review queue -------------------------------------------------------------------------------
+class ReviewDecision(BaseModel):
+    decision: str
+    company_id: str | None = None
+    broker_number: str | None = None
+
+
+@v1.get("/review/channels")
+def review_channels(decision: str = Query("review"), limit: int = Query(200, le=500)) -> dict[str, Any]:
+    import json
+
+    from pitchops.bq import query
+    from pitchops.fs import client as fs
+
+    t = settings.table
+    rows = query(
+        f"""SELECT m.channel_id, m.company_id, m.broker_number, m.match_type, m.match_score,
+                   TO_JSON_STRING(m.signals) AS signals, c.office_names_en AS company_name, b.name_en AS broker_name
+            FROM `{t('channel_matches')}` m
+            LEFT JOIN `{t('companies')}` c USING (company_id)
+            LEFT JOIN `{t('brokers')}` b ON b.broker_number = m.broker_number
+            WHERE m.decision = @decision ORDER BY m.match_score DESC LIMIT @lim""",
+        {"decision": decision, "lim": limit})
+    decided = {d.id for d in fs().collection("review_decisions").select([]).stream()}
+    items = []
+    for r in rows:
+        if r["channel_id"] in decided:
+            continue
+        sig = json.loads(r.pop("signals") or "{}")
+        r["title"], r["thumbnail"], r["handle"] = sig.get("title"), sig.get("thumbnail"), sig.get("handle")
+        r["subscribers"], r["videos"] = sig.get("subscribers"), sig.get("videos")
+        r["top_signals"] = {k: v for k, v in sig.items() if isinstance(v, (int, float)) and not isinstance(v, bool)
+                            and k in ("website_route", "domain_match", "brn_match", "name_similarity",
+                                      "dubai_context", "real_estate_context", "broker_name_similarity") and v}
+        r["routes"] = sig.get("routes", [])
+        r["url"] = f"https://www.youtube.com/channel/{r['channel_id']}"
+        items.append(r)
+    return {"items": items, "count": len(items)}
+
+
+@v1.post("/review/channels/{channel_id}")
+def review_decide(channel_id: str, body: ReviewDecision, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+    from pitchops.fs import client as fs
+
+    decision = {"accept": "manual_accept", "manual_accept": "manual_accept",
+                "reject": "manual_reject", "manual_reject": "manual_reject"}.get(body.decision)
+    if not decision or not channel_id.startswith("UC"):
+        raise HTTPException(status_code=400, detail="decision must be manual_accept|reject")
+    doc = {"decision": decision, "company_id": body.company_id, "broker_number": body.broker_number,
+           "decided_by": user.get("email") or user.get("uid"), "decided_at": datetime.now(UTC).isoformat(),
+           "applied": False}
+    fs().collection("review_decisions").document(channel_id).set(doc)
+    return {"channel_id": channel_id, **doc}
 
 
 app.include_router(v1, prefix="/v1")

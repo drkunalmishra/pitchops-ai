@@ -4,7 +4,11 @@ import json
 from pathlib import Path
 
 S, I, F, B, T, D, J = "STRING", "INT64", "FLOAT64", "BOOL", "TIMESTAMP", "DATE", "JSON"
-REQ = {"broker_number", "company_id", "channel_id", "video_id", "run_id", "ts", "snapshot_date"}
+# REQUIRED only for each table's own key; everything else NULLABLE.
+PK = {"brokers": {"broker_number"}, "companies": {"company_id"}, "channels": {"channel_id"}, "videos": {"video_id"},
+      "video_metrics_daily": {"video_id", "snapshot_date"}, "channel_matches": {"channel_id"},
+      "channel_candidates": {"candidate_id"}, "website_probes": {"domain"}, "discovery_searches": {"search_key"},
+      "quota_ledger": {"ts"}, "llm_calls": {"ts"}, "job_runs": {"run_id"}}
 
 # table: (fields, partition_field or None, cluster fields)
 TABLES = {
@@ -63,6 +67,8 @@ TABLES = {
     "quota_ledger": ([("ts", T), ("day_pt", D), ("method", S), ("units", I), ("job", S)], "ts", ["day_pt"]),
     "llm_calls": ([("ts", T), ("job", S), ("model_id", S), ("prompt_version", S), ("tokens_in", I),
                    ("tokens_out", I), ("cost_usd_est", F), ("latency_ms", I), ("status", S)], "ts", ["model_id"]),
+    "discovery_searches": ([("search_key", S), ("route", S), ("query", S), ("company_id", S), ("page", I),
+                            ("next_page_token", S), ("result_count", I), ("searched_at", T)], None, ["route"]),
     "job_runs": ([("job", S), ("started_at", T), ("ended_at", T), ("status", S), ("counters", J),
                   ("error", S)], None, ["job"]),
 }
@@ -70,9 +76,9 @@ TABLES = {
 COMMON = [("ingested_at", T), ("run_id", S)]
 
 
-def field(spec: tuple) -> dict:
+def field(spec: tuple, table: str) -> dict:
     name, typ, *mode = spec
-    m = mode[0] if mode else ("REQUIRED" if name in REQ and typ != "JSON" else "NULLABLE")
+    m = mode[0] if mode else ("REQUIRED" if name in PK.get(table, set()) else "NULLABLE")
     return {"name": name, "type": typ, "mode": m}
 
 
@@ -82,7 +88,7 @@ def main() -> None:
     for name, (fields, part, cluster) in TABLES.items():
         names = {f[0] for f in fields}
         allf = fields + [c for c in COMMON if c[0] not in names]
-        doc = {"table": name, "fields": [field(f) for f in allf], "clustering": cluster}
+        doc = {"table": name, "fields": [field(f, name) for f in allf], "clustering": cluster}
         if part:
             doc["time_partitioning"] = {"field": part, "type": "DAY"}
         (out / f"{name}.json").write_text(json.dumps(doc, indent=2) + "\n")

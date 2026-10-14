@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 
-def log(event: str, severity: str = "INFO", **fields: Any) -> None:
+def log(event: str, **fields: Any) -> None:
+    """log("x", severity="WARNING", k=v, ...) — severity defaults to INFO."""
+    severity = fields.pop("severity", "INFO")
     rec = {"ts": datetime.now(UTC).isoformat(), "severity": severity, "event": event, **fields}
     print(json.dumps(rec, default=str), file=sys.stderr, flush=True)

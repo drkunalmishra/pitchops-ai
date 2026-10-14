@@ -49,7 +49,7 @@
     {
       "name": "run_id",
       "type": "STRING",
-      "mode": "REQUIRED"
+      "mode": "NULLABLE"
     }
   ],
   "clustering": [

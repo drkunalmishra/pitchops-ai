@@ -4,7 +4,7 @@
     {
       "name": "video_id",
       "type": "STRING",
-      "mode": "REQUIRED"
+      "mode": "NULLABLE"
     },
     {
       "name": "layer",
@@ -29,7 +29,7 @@
     {
       "name": "run_id",
       "type": "STRING",
-      "mode": "REQUIRED"
+      "mode": "NULLABLE"
     }
   ],
   "clustering": [

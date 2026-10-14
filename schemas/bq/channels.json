@@ -44,12 +44,12 @@
     {
       "name": "company_id",
       "type": "STRING",
-      "mode": "REQUIRED"
+      "mode": "NULLABLE"
     },
     {
       "name": "broker_number",
       "type": "STRING",
-      "mode": "REQUIRED"
+      "mode": "NULLABLE"
     },
     {
       "name": "match_type",
@@ -79,7 +79,7 @@
     {
       "name": "run_id",
       "type": "STRING",
-      "mode": "REQUIRED"
+      "mode": "NULLABLE"
     }
   ],
   "clustering": [

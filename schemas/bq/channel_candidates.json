@@ -4,12 +4,12 @@
     {
       "name": "candidate_id",
       "type": "STRING",
-      "mode": "NULLABLE"
+      "mode": "REQUIRED"
     },
     {
       "name": "channel_id",
       "type": "STRING",
-      "mode": "REQUIRED"
+      "mode": "NULLABLE"
     },
     {
       "name": "handle",
@@ -59,7 +59,7 @@
     {
       "name": "run_id",
       "type": "STRING",
-      "mode": "REQUIRED"
+      "mode": "NULLABLE"
     }
   ],
   "clustering": [

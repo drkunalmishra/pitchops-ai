@@ -1,3 +1,4 @@
+# One image for the Cloud Run service "api" and the Cloud Run Jobs (discover / harvest / score).
 FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:0.13.0 /uv /usr/local/bin/uv
 WORKDIR /app
@@ -6,6 +7,9 @@ COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY pitchops ./pitchops
 COPY services ./services
+COPY jobs ./jobs
+COPY prompts ./prompts
+COPY schemas ./schemas
 RUN uv sync --frozen --no-dev
 ENV PATH="/app/.venv/bin:$PATH"
 CMD ["sh", "-c", "uvicorn services.api.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

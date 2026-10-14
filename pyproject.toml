@@ -31,13 +31,14 @@ build-backend = "hatchling.build"
 packages = ["pitchops"]
 
 [tool.ruff]
-line-length = 120
+line-length = 125
 target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
+"services/api/*.py" = ["B008"]
 "scripts/gen_bq_schemas.py" = ["E741"]
 
 [tool.mypy]

@@ -36,6 +36,14 @@ def main() -> int:
             print(f"CREATED  {spec['table']}")
             created += 1
             continue
+        want_mode = {f.name: f.mode for f in want}
+        relaxed = [f.name for f in tbl.schema if f.mode == "REQUIRED" and want_mode.get(f.name) == "NULLABLE"]
+        if relaxed:  # REQUIRED -> NULLABLE is a non-destructive schema change
+            tbl.schema = [bigquery.SchemaField(f.name, f.field_type, mode="NULLABLE", fields=f.fields)
+                          if f.name in relaxed else f for f in tbl.schema]
+            tbl = bq.update_table(tbl, ["schema"])
+            print(f"RELAXED  {spec['table']} {relaxed}")
+            altered += 1
         have = {f.name for f in tbl.schema}
         new = [bigquery.SchemaField(f.name, f.field_type, mode="NULLABLE" if f.mode == "REQUIRED" else f.mode)
                for f in want if f.name not in have]
@@ -44,7 +52,7 @@ def main() -> int:
             bq.update_table(tbl, ["schema"])
             print(f"ALTERED  {spec['table']} +{[f.name for f in new]}")
             altered += 1
-        else:
+        elif not relaxed:
             unchanged += 1
     print(f"tables: created={created} altered={altered} unchanged={unchanged}")
     return 0
