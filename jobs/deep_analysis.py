@@ -133,6 +133,19 @@ def flush(rows: list[dict[str, Any]], run_id: str) -> None:
     merge_rows("property_mentions", mentions, ["mention_id"])
 
 
+def apply_relevance_recheck() -> int:
+    """Watching the video beats reading its title: a deep analysis that finds no UAE real-estate content
+    flags the video irrelevant (relevance_source='deep'); it then drops out of v_videos_relevant (D3)."""
+    from jobs.relevance import dml
+
+    return dml(f"""UPDATE `{t('videos')}` v SET is_relevant = FALSE, relevance_source = 'deep',
+            relevance_reason = CONCAT('deep: ', JSON_VALUE(a.overview, '$.relevance_note'))
+        FROM `{t('video_analysis')}` a
+        WHERE a.video_id = v.video_id AND a.status = 'succeeded'
+          AND JSON_VALUE(a.overview, '$.is_uae_real_estate') = 'false'
+          AND IFNULL(v.relevance_source, '') != 'manual'""")
+
+
 def main(argv: list[str] | None = None) -> int:
     p = base_parser("deep_analysis")
     p.add_argument("--estimate", action="store_true")
@@ -176,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:
                     fut.cancel()
         flush(buf, run_id)
         c.update(selected=len(todo), succeeded=ok, needs_review=review, api_failed=failed)
+        c["relevance_downgraded"] = apply_relevance_recheck()
     print({"run_id": run_id, **c})
     return 0
 
