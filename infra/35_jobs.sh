@@ -13,10 +13,11 @@ ENVS="$ENVS,GEMINI_BUDGET_USD=$(env_get GEMINI_BUDGET_USD 60),GEMINI_DAILY_USD=$
 job_args() {
   case "$1" in
     discover) echo "-m,jobs.discover,--searches,10,--kw-searches,0" ;;
+    comments) echo "-m,jobs.comments,--stage,fetch" ;;  # fetch only (YouTube); classification needs Gemini
     *) echo "-m,jobs.$1" ;;
   esac
 }
-for job in discover harvest score; do
+for job in discover harvest score comments; do
   step "Cloud Run Job: $job"
   verb=create; gcloud run jobs describe "$job" --region="$REGION" >/dev/null 2>&1 && verb=update
   gcloud run jobs "$verb" "$job" --image="$IMAGE" --region="$REGION" \

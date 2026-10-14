@@ -50,10 +50,12 @@ def pepper() -> bytes:
 
 # ---- fetch -------------------------------------------------------------------------------------
 def videos_to_fetch(limit: int | None) -> list[dict[str, Any]]:
-    rows = query(f"""SELECT a.video_id, v.channel_id FROM `{t('video_analysis')}` a
+    """Every deep-analysis-selected video (D10) that is still relevant and not fetched yet. Selection, not
+    completed analysis, so comments are ready when (paused) deep analysis resumes."""
+    rows = query(f"""SELECT d.video_id, v.channel_id FROM `{t('deep_selection')}` d
         JOIN `{t('v_videos_relevant')}` v USING (video_id)
         LEFT JOIN `{t('audience_summaries')}` s USING (video_id)
-        WHERE a.status IN ('succeeded', 'needs_review') AND s.video_id IS NULL ORDER BY a.video_id""")
+        WHERE s.video_id IS NULL ORDER BY d.company_id, d.rank_in_company""")
     return rows[:limit] if limit else rows
 
 

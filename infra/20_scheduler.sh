@@ -19,5 +19,6 @@ sched harvest-1430  "30 14 * * *" harvest
 sched harvest-2330  "30 23 * * *" harvest
 sched score-1700    "0 17 * * *" score
 sched score-0030    "30 0 * * *" score
+sched comments-1245 "45 12 * * *" comments
 gcloud scheduler jobs list --location="$REGION" --format='table(name.basename(),schedule,timeZone,state,scheduleTime)'
 : "$NUM"
