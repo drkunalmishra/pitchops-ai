@@ -23,6 +23,11 @@ from pitchops.logs import log
 
 JOB = "p3_deep"
 CONCURRENCY = 4
+REFUSED_STOP = 3
+
+
+class PolicyRefused(Exception):
+    pass
 # defaults until a pilot is measured: P1 smoke showed ~92 input tokens per second of LOW-res video
 DEFAULT_TOK_PER_SEC, DEFAULT_OVERHEAD_IN, DEFAULT_OUT = 95.0, 3000.0, 4000.0
 
@@ -152,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
     p = base_parser("deep_analysis")
     p.add_argument("--estimate", action="store_true")
     p.add_argument("--retry-review", action="store_true", help="also re-run videos currently in needs_review")
+    p.add_argument("--concurrency", type=int, default=CONCURRENCY)
     a = p.parse_args(argv)
     run_id = a.run_id or new_run_id("deep")
     s = get_settings()
@@ -165,7 +171,8 @@ def main(argv: list[str] | None = None) -> int:
     with job_run("deep_analysis", run_id) as c:
         buf: list[dict[str, Any]] = []
         ok = review = failed = 0
-        with ThreadPoolExecutor(CONCURRENCY) as ex:
+        refused_streak = 0
+        with ThreadPoolExecutor(a.concurrency) as ex:
             futs = [ex.submit(analyse, g, v) for v in todo]
             try:
                 for f in as_completed(futs):
@@ -176,7 +183,11 @@ def main(argv: list[str] | None = None) -> int:
                     except Exception as e:  # API errors: left pending, retried next run
                         failed += 1
                         log("deep_failed", severity="WARNING", error=f"{type(e).__name__}: {e}"[:300])
+                        refused_streak = refused_streak + 1 if "PERMISSION_DENIED" in str(e) else 0
+                        if refused_streak >= REFUSED_STOP:
+                            raise PolicyRefused(f"{REFUSED_STOP} consecutive 403 policy refusals") from e
                         continue
+                    refused_streak = 0
                     ok += r["status"] == "succeeded"
                     review += r["status"] == "needs_review"
                     buf.append(r)
@@ -188,6 +199,11 @@ def main(argv: list[str] | None = None) -> int:
             except BudgetExhausted as e:
                 log("BUDGET_EXHAUSTED", severity="WARNING", detail=str(e))
                 c["_status"] = "BUDGET_EXHAUSTED"
+                for fut in futs:
+                    fut.cancel()
+            except PolicyRefused as e:  # circuit breaker: stop hammering a blocked project
+                log("POLICY_REFUSED", severity="ERROR", detail=str(e))
+                c["_status"] = "POLICY_REFUSED"
                 for fut in futs:
                     fut.cancel()
         flush(buf, run_id)
