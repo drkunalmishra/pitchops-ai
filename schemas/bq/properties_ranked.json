@@ -1,0 +1,128 @@
+{
+  "table": "properties_ranked",
+  "fields": [
+    {
+      "name": "property_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "rank",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "canonical_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "kind",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "developer",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "area",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "emirate",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "aliases",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "property_types",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "videos",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "weighted_videos",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "recent_videos",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "companies",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "channels",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "total_views",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "score",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "avg_sales_pressure",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "top_buyer_personas",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "top_frameworks",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "price_texts",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "example_video_ids",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "media_candidate",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "clustering": [
+    "rank"
+  ]
+}

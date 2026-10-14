@@ -37,6 +37,31 @@
       "mode": "REPEATED"
     },
     {
+      "name": "video_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "deep_videos",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "channel_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "company_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "weighted_evidence",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
       "name": "ingested_at",
       "type": "TIMESTAMP",
       "mode": "NULLABLE"

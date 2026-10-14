@@ -67,6 +67,56 @@
       "mode": "NULLABLE"
     },
     {
+      "name": "trending_median",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "trending_p75",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sales_pressure_median",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "evidence_density_median",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "education_to_sales_median",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "buyer_intent_share",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "top_objections",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "top_questions",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "deep_n",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "band_basis",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
       "name": "ingested_at",
       "type": "TIMESTAMP",
       "mode": "NULLABLE"
