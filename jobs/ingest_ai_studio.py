@@ -7,9 +7,13 @@ generate ourselves (deep_video.recheck_claims: self-cited sources -> unsourced, 
 mention fixes. Idempotent (MERGE on video_id / mention_id); videos that already have a succeeded Vertex analysis are
 skipped. No Gemini calls, no cost.
 
+Long videos (> 5 min, --long): returned/long_*.json analysed in AI Studio from the FIRST 5 MINUTES only (one clip
+0-300 s instead of D8's 3 clips) -> coverage 'partial', clips [0-300], model_id marks the first-5-min provenance.
+
 Usage:
   uv run python -m jobs.ingest_ai_studio --dry-run     # validate + print stats, write nothing
   uv run python -m jobs.ingest_ai_studio
+  uv run python -m jobs.ingest_ai_studio --long [--dry-run]
 """
 
 from __future__ import annotations
@@ -34,6 +38,8 @@ from pitchops.logs import log
 
 ROOT = Path(__file__).resolve().parents[1] / "exports" / "ai_studio"
 MODEL_ID = "ai-studio:gemini-flash (manual)"
+MODEL_ID_LONG = "ai-studio:gemini-flash (manual, first 5 min)"
+LONG_CLIP = (0, 300)
 PHONE = re.compile(r"\+?971[\s-]?\d[\d\s-]{7,11}\d|(?<!\d)05\d[\s-]?\d{3}[\s-]?\d{4}(?!\d)")
 # mention fixes the model got wrong or left empty (project canonical key -> fields to fill when missing)
 MENTION_FILL = {
@@ -47,9 +53,9 @@ def durations() -> dict[str, int]:
         return {r["video_id"]: int(r["duration_sec"]) for r in csv.DictReader(f)}
 
 
-def load_files() -> list[dict[str, Any]]:
+def load_files(pattern: str = "batch_*.json") -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
-    for p in sorted(glob.glob(str(ROOT / "returned" / "batch_*.json"))):
+    for p in sorted(glob.glob(str(ROOT / "returned" / pattern))):
         for a in json.load(open(p))["analyses"]:
             out.append({**a, "_file": Path(p).name})
     return out
@@ -69,11 +75,13 @@ def fix_mentions(mentions: list[dict[str, Any]]) -> int:
     return n
 
 
-def build(a: dict[str, Any], dur: int, schema: dict[str, Any]) -> tuple[dict[str, Any], dict[str, int]]:
+def build(a: dict[str, Any], dur: int, schema: dict[str, Any], long: bool = False
+          ) -> tuple[dict[str, Any], dict[str, int]]:
     d = {k: copy.deepcopy(a[k]) for k in ("overview", "segments", "claims", "property_mentions")}
     stats: Counter[str] = Counter()
-    coverage, clips = deep_video.clips_for(dur)
-    base = {"video_id": a["video_id"], "prompt_version": deep_video.PROMPT_VERSION, "model_id": MODEL_ID,
+    coverage, clips = ("partial", [LONG_CLIP]) if long else deep_video.clips_for(dur)
+    base = {"video_id": a["video_id"], "prompt_version": deep_video.PROMPT_VERSION,
+            "model_id": MODEL_ID_LONG if long else MODEL_ID,
             "coverage": coverage, "clips": [{"start": x, "end": y} for x, y in clips], "duration_sec": dur,
             "tokens_in": None, "tokens_out": None, "cost_usd_est": 0.0, "attempts": 1}
     try:
@@ -81,7 +89,7 @@ def build(a: dict[str, Any], dur: int, schema: dict[str, Any]) -> tuple[dict[str
     except jsonschema.ValidationError as e:
         return {**base, "status": "needs_review", "error": f"schema: {e.message}"[:1000],
                 "validation_errors": [e.message[:300]]}, {"schema_fail": 1}
-    stats["mmss_fixed"] += deep_video.normalize_mmss(d, dur)
+    stats["mmss_fixed"] += deep_video.normalize_mmss(d, LONG_CLIP[1] if long else dur)
     errs = deep_video.validate(d, dur, coverage, clips)
     if errs:
         return {**base, "status": "needs_review", "error": "; ".join(errs)[:1000],
@@ -102,14 +110,15 @@ def build(a: dict[str, Any], dur: int, schema: dict[str, Any]) -> tuple[dict[str
 
 def main(argv: list[str] | None = None) -> int:
     p = base_parser("ingest_ai_studio")
+    p.add_argument("--long", action="store_true", help="load long_*.json (videos > 5 min, first 5 min only)")
     a = p.parse_args(argv)
     run_id = a.run_id or new_run_id("aistudio")
     dur = durations()
-    rows = load_files()
+    rows = load_files("long_*.json" if a.long else "batch_*.json")
     if a.limit:
         rows = rows[:a.limit]
     have = {r["video_id"] for r in query(f"""SELECT video_id FROM `{t('video_analysis')}`
-        WHERE status = 'succeeded' AND model_id != @m""", {"m": MODEL_ID})}
+        WHERE status = 'succeeded' AND model_id NOT IN (@m, @ml)""", {"m": MODEL_ID, "ml": MODEL_ID_LONG})}
     schema = deep_video.schema()
     out, stats = [], Counter()
     seen: set[str] = set()
@@ -123,7 +132,10 @@ def main(argv: list[str] | None = None) -> int:
             stats["unknown_video"] += 1
             log("aistudio_unknown_video", severity="WARNING", video_id=vid, file=r["_file"])
             continue
-        row, st = build(r, dur[vid], schema)
+        if a.long and dur[vid] <= deep_video.FULL_MAX_SEC:
+            stats["not_long"] += 1
+            continue
+        row, st = build(r, dur[vid], schema, a.long)
         stats.update(st)
         stats[row["status"]] += 1
         stats["irrelevant"] += row.get("overview", {}).get("is_uae_real_estate") is False

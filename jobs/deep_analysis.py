@@ -58,7 +58,8 @@ def measured() -> tuple[float, float, float, int]:
     """(input tokens per analysed second, fixed input overhead, output tokens per call, n calls measured)."""
     r = query(f"""SELECT AVG(tokens_out) o, COUNT(*) n, SUM(tokens_in) tin,
                          SUM(IF(coverage = 'full', duration_sec, 300)) secs
-                  FROM `{t('video_analysis')}` WHERE prompt_version = @pv AND attempts = 1""",
+                  FROM `{t('video_analysis')}` WHERE prompt_version = @pv AND attempts = 1
+                    AND tokens_in IS NOT NULL""",
               {"pv": deep_video.PROMPT_VERSION})[0]
     if r["n"] and r["secs"]:
         per_sec = (float(r["tin"]) - DEFAULT_OVERHEAD_IN * r["n"]) / float(r["secs"])
