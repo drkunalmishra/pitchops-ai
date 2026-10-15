@@ -35,6 +35,7 @@ COMMUNITIES = {
     "jumeirah beach residence", "jbr", "al furjan", "dubai investment park", "dip", "arjan", "majan", "al jaddaf",
     "sobha hartland", "mudon", "tilal al ghaf", "the valley", "valley", "dubai creek", "palm jebel ali",
     "dubai maritime city", "al habtoor city", "silicon oasis", "dubai silicon oasis", "jumeirah park", "emirates hills",
+    "wynn al marjan island", "wynn al marjan", "louvre abu dhabi", "emerald hills", "aljada", "al barari",
 }
 
 

@@ -7,6 +7,7 @@ coverage = 'partial', timestamps absolute. The LLM never computes final scores �
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pitchops.analysis.taxonomy import enum
@@ -185,6 +186,79 @@ def validate(data: dict[str, Any], duration: int, coverage: str, clips: list[tup
     if data.get("overview", {}).get("hook_end_sec", 0) > lim:
         errs.append("hook_end_sec beyond duration")
     return errs
+
+
+SOURCE_GENERIC = {"official", "data", "sheet", "pricing", "price", "prices", "launch", "developer", "developers",
+                  "properties", "property", "brochure", "report", "reports", "records", "regulations", "announcement",
+                  "terms", "plan", "payment", "market", "historical", "transaction", "transactions", "schedule",
+                  "specifications", "specs", "campaign", "promotional", "scheme", "dubai", "real", "estate",
+                  "government", "authority", "benchmarks", "inventory", "structure", "comparison", "rental", "resale",
+                  "annual", "masterplan", "investor", "disclosure", "strategic", "tourism", "aviation", "with", "from",
+                  "group", "listing", "brokerage", "event", "catalog", "master"}
+YIELD_RE = re.compile(r"(\d{1,2}(?:[.,]\d)?)\s*%?\s*(?:(?:-|–|to|à)\s*(\d{1,2}(?:[.,]\d)?)\s*)?%")
+YIELD_WORDS = re.compile(r"roi|yield|return|rental|rendement|rentabilit|عائد", re.I)
+NOT_YIELD_AFTER = re.compile(r"^\s*(monthly|month|per month|down|tax|plan|payment|paiement|mensuel|dld|fee)", re.I)
+
+
+def _yield_match(text: str) -> re.Match[str] | None:
+    """First 'N%' / 'N-M%' in 3..30 % with a yield word within 40 chars that isn't a payment-plan / tax / fee %."""
+    for m in YIELD_RE.finditer(text):
+        hi = float((m.group(2) or m.group(1)).replace(",", "."))
+        if not 3 <= hi <= 30 or NOT_YIELD_AFTER.match(text[m.end():m.end() + 14]):
+            continue
+        if YIELD_WORDS.search(text[max(0, m.start() - 40):m.end() + 40]):
+            return m
+    return None
+
+
+def _source_tokens(src: str) -> set[str]:
+    words = re.findall(r"[A-Za-z][A-Za-z&]+", src)
+    toks = {w.lower() for w in words if len(w) >= 4 and w.lower() not in SOURCE_GENERIC}
+    caps = [w for w in words if w[0].isupper() and w.lower() not in {"of", "and", "the"}]
+    if len(caps) >= 2:
+        toks.add("".join(w[0] for w in caps).lower())  # "Dubai Land Department" -> "dld"
+    toks |= {w.lower() for w in words if w.isupper() and len(w) >= 2}  # explicit acronyms: DLD, RERA
+    return toks
+
+
+def recheck_claims(data: dict[str, Any]) -> dict[str, int]:
+    """Load-time re-checks for analyses we did not run ourselves (AI Studio). Mutates data in place (pure otherwise).
+
+    1. Source check: a claim keeps has_source=True only if a distinctive word / acronym of its source_text appears in
+       the video's on-screen text or in the quote itself; otherwise the model's label is kept as source_reported and
+       has_source becomes False (source_check='self_cited').
+    2. Missed yields: a percentage next to a yield word in a segment summary / on-screen text / overview summary,
+       when no roi_yield claim exists, is added as an unsourced roi_yield claim (origin='recheck')."""
+    segs, claims, ov = data.get("segments", []), data.get("claims", []), data.get("overview", {})
+    screen = " ".join((s.get("on_screen_text") or "") for s in segs).lower()
+    out = {"self_cited": 0, "source_shown": 0, "yield_added": 0}
+    for c in claims:
+        c.setdefault("origin", "model")
+        if not c.get("has_source"):
+            c["source_check"] = "none"
+            continue
+        src = c.get("source_text") or ""
+        hay = screen + " " + (c.get("quote") or "").lower()
+        if any(re.search(rf"\b{re.escape(tok)}\b", hay) for tok in _source_tokens(src)):
+            c["source_check"] = "shown"
+            out["source_shown"] += 1
+        else:
+            c.update(source_check="self_cited", source_reported=src, has_source=False)
+            out["self_cited"] += 1
+    if any(c.get("claim_type") == "roi_yield" for c in claims):
+        return out
+    texts = [(float(s.get("start_sec", 0)), t) for s in segs for t in (s.get("on_screen_text"), s.get("summary")) if t]
+    texts.append((0.0, ov.get("summary") or ""))
+    for ts, text in texts:
+        m = _yield_match(text)
+        if m:
+            a, b = max(0, m.start() - 40), min(len(text), m.end() + 30)
+            claims.append({"ts_sec": ts, "quote": text[a:b].strip(), "claim_type": "roi_yield", "has_source": False,
+                           "source_text": None, "is_risky": False, "risk_note": None, "origin": "recheck",
+                           "source_check": "none"})
+            out["yield_added"] += 1
+            break
+    return out
 
 
 URGENT_FRAMEWORKS = {"fomo_scarcity", "deal_discount"}

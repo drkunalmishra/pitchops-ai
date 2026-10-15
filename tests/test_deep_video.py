@@ -1,4 +1,4 @@
-from pitchops.analysis.deep_video import clips_for, derived_metrics, normalize_mmss, validate
+from pitchops.analysis.deep_video import clips_for, derived_metrics, normalize_mmss, recheck_claims, validate
 
 
 def data(segs: list, claims: list | None = None, frameworks: list | None = None, hook: str = "question",
@@ -67,3 +67,40 @@ def test_normalize_mmss_leaves_valid_and_ambiguous_alone() -> None:
     assert normalize_mmss(ok, 120) is False and ok["segments"][1]["end_sec"] == 120
     bad = data([seg(0, 175)])  # 175 has '75' seconds -> not MMSS -> no conversion
     assert normalize_mmss(bad, 100) is False
+
+
+def test_recheck_source_shown_vs_self_cited() -> None:
+    s = seg(0, 20)
+    s["on_screen_text"] = "Record-Breaking DLD Transactions"
+    shown = {**claim(5, src=True, quote="record highs"), "source_text": "Dubai Land Department official data"}
+    fake = {**claim(8, src=True, quote="From 2.5M AED"), "source_text": "Developer Launch Inventory"}
+    d = data([s], [shown, fake])
+    out = recheck_claims(d)
+    assert out["source_shown"] == 1 and out["self_cited"] == 1
+    assert shown["has_source"] and shown["source_check"] == "shown"
+    assert not fake["has_source"] and fake["source_reported"] == "Developer Launch Inventory"
+
+
+def test_recheck_adds_missed_yield_once() -> None:
+    s = seg(10, 20)
+    s["summary"] = "Projected 8-9% ROI and rental demand"
+    d = data([seg(0, 10), s], [{**claim(1), "claim_type": "price", "quote": "AED 1M"}])
+    assert recheck_claims(d)["yield_added"] == 1
+    added = d["claims"][-1]
+    assert added["claim_type"] == "roi_yield" and added["origin"] == "recheck" and added["ts_sec"] == 10
+    assert not added["has_source"]
+
+
+def test_recheck_no_yield_when_already_claimed_or_no_percent() -> None:
+    s = seg(0, 10)
+    s["summary"] = "8% rental yield"
+    assert recheck_claims(data([s], [claim(1)]))["yield_added"] == 0
+    s2 = seg(0, 10)
+    s2["summary"] = "high rental demand"
+    assert recheck_claims(data([s2]))["yield_added"] == 0
+
+
+def test_recheck_ignores_payment_plan_and_tax_percents() -> None:
+    s = seg(0, 10)
+    s["summary"] = "1% monthly payment plan, 0% property tax and high rental demand"
+    assert recheck_claims(data([s]))["yield_added"] == 0
