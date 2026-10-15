@@ -20,5 +20,6 @@ sched harvest-2330  "30 23 * * *" harvest
 sched score-1700    "0 17 * * *" score
 sched score-0030    "30 0 * * *" score
 sched comments-1245 "45 12 * * *" comments
+sched finops-3h     "15 */3 * * *" finops    # FinOps dashboard refresh every 3 hours (P5)
 gcloud scheduler jobs list --location="$REGION" --format='table(name.basename(),schedule,timeZone,state,scheduleTime)'
 : "$NUM"

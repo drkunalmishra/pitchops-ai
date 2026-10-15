@@ -25,7 +25,7 @@ gcloud run deploy api --image="$IMAGE" --region="$REGION" \
   --service-account="sa-api@$PROJECT_ID.iam.gserviceaccount.com" \
   --min-instances=0 --max-instances=2 --memory=512Mi --cpu=1 --concurrency=40 \
   --allow-unauthenticated \
-  --set-env-vars="GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=$REGION,FIRESTORE_DATABASE=$FS_DB,GEMINI_LOCATION=$(env_get GEMINI_LOCATION global),GEMINI_MODEL_FLASH=$(env_get GEMINI_MODEL_FLASH),GEMINI_BUDGET_USD=$(env_get GEMINI_BUDGET_USD 60),GEMINI_DAILY_USD=$(env_get GEMINI_DAILY_USD 25)" \
+  --set-env-vars="GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=$REGION,FIRESTORE_DATABASE=$FS_DB,GEMINI_LOCATION=$(env_get GEMINI_LOCATION global),GEMINI_MODEL_FLASH=$(env_get GEMINI_MODEL_FLASH),GEMINI_BUDGET_USD=$(env_get GEMINI_BUDGET_USD 60),GEMINI_DAILY_USD=$(env_get GEMINI_DAILY_USD 25),ADMIN_EMAILS=$(env_get ADMIN_EMAILS "$(env_get CONTACT_EMAIL)")" \
   --quiet
 URL="$(gcloud run services describe api --region="$REGION" --format='value(status.url)')"
 echo "$IMAGE" > "$REPO_ROOT/.last_image"

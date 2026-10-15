@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     firebase_config_json: str = ""
     contact_email: str = ""
     cors_origins: str = Field(default="")
+    admin_emails: str = ""  # comma-separated; Firebase users with these emails (or custom claim admin) see Admin/QA
 
     @property
     def bucket(self) -> str:

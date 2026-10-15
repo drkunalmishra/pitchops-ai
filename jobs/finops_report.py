@@ -26,12 +26,54 @@ LLM_PHASE = {"p3_": "P3", "p4_": "P4", "p5_": "P5", "p6_": "P6", "p7_": "P7", "s
 PROJECTION = {"P4": 5.0, "P5": 1.0, "P6": 6.0, "P7": 120.0}
 
 
+TRIAL_CREDIT_USD = 300.0
+PHASE_CAPS = {"P1": 5.0, "P2": 5.0, "P4": 15.0, "P5": 5.0, "P6": 20.0, "P7": 120.0}
+
+
+def unit_costs(by_phase: dict[str, float]) -> dict[str, Any]:
+    """Cost per output unit (USD). Deep analyses done by hand in AI Studio cost $0 to the project and are excluded."""
+    r = query(f"""SELECT
+        (SELECT COUNT(*) FROM `{t('video_analysis')}` WHERE status = 'succeeded' AND tokens_in IS NOT NULL) vertex_deep,
+        (SELECT COUNT(*) FROM `{t('video_analysis')}` WHERE status = 'succeeded' AND tokens_in IS NULL) manual_deep,
+        (SELECT IFNULL(SUM(cost_usd_est), 0) FROM `{t('llm_calls')}` WHERE job LIKE 'p3_deep%') deep_usd,
+        (SELECT COUNT(*) FROM `{t('video_tags_tier2')}`) tier2_videos,
+        (SELECT IFNULL(SUM(cost_usd_est), 0) FROM `{t('llm_calls')}` WHERE job LIKE 'p3_tier2%') tier2_usd""")[0]
+    per = lambda usd, n: round(float(usd) / n, 5) if n else None  # noqa: E731
+    return {"per_deep_video_vertex": per(r["deep_usd"], r["vertex_deep"]), "vertex_deep_videos": r["vertex_deep"],
+            "manual_deep_videos": r["manual_deep"], "per_tier2_video": per(r["tier2_usd"], r["tier2_videos"]),
+            "per_report": None, "per_script": None, "per_rendered_second": None}
+
+
 def t(name: str) -> str:
     return get_settings().table(name)
 
 
 def llm_phase(job: str) -> str:
     return next((p for k, p in LLM_PHASE.items() if job.startswith(k)), "other")
+
+
+BQ_SCOPE = {"value": "project"}
+
+
+def bq_bytes_by_day(region: str) -> list[dict[str, Any]]:
+    """Project-wide bytes billed needs bigquery.jobs.listAll. Without it (the jobs service account) fall back to this
+    identity's own jobs, or to the BigQuery rows of the last full run (owner run), and say so in the summary."""
+    from google.api_core.exceptions import Forbidden
+
+    sql = """SELECT DATE(creation_time, 'Asia/Kolkata') d, SUM(total_bytes_billed) b
+             FROM `region-{r}`.INFORMATION_SCHEMA.{v} GROUP BY 1"""
+    try:
+        return query(sql.format(r=region, v="JOBS_BY_PROJECT"))
+    except Forbidden:
+        pass
+    try:
+        rows = query(sql.format(r=region, v="JOBS_BY_USER"))
+        BQ_SCOPE["value"] = "own_jobs_only"
+        return rows
+    except Forbidden:  # no job-history access at all: carry the last full run's BigQuery rows forward
+        BQ_SCOPE["value"] = "last_full_run"
+        return query(f"""SELECT date AS d, CAST(units * POW(2, 30) AS INT64) b FROM `{t('finops_ledger')}`
+                         WHERE provider = 'bigquery'""")
 
 
 def build_ledger() -> list[dict[str, Any]]:
@@ -55,8 +97,7 @@ def build_ledger() -> list[dict[str, Any]]:
                        SUM(TIMESTAMP_DIFF(ended_at, started_at, SECOND)) sec FROM `{t('job_runs')}` GROUP BY 1, 2"""):
         add(r["d"], JOB_PHASE.get(r["job"], "other"), r["job"], "cloud_run", r["sec"], "job_seconds",
             r["sec"] * CLOUD_RUN_USD_PER_SEC)
-    for r in query(f"""SELECT DATE(creation_time, 'Asia/Kolkata') d, SUM(total_bytes_billed) b
-                       FROM `region-{s.gcp_region}`.INFORMATION_SCHEMA.JOBS_BY_PROJECT GROUP BY 1"""):
+    for r in bq_bytes_by_day(s.gcp_region):
         add(r["d"], "shared", "bigquery_queries", "bigquery", (r["b"] or 0) / 2**30, "GiB_billed",
             (r["b"] or 0) / 2**40 * BQ_USD_PER_TIB)
     return list(rows.values())
@@ -82,6 +123,12 @@ def main() -> int:
         by_stage[f"{r['phase']}/{r['stage']}"] += r["est_cost_usd"]
         if r["date"] == today:
             today_usd += r["est_cost_usd"]
+    by_day: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    quota_by_day: dict[str, float] = defaultdict(float)
+    for r in ledger:
+        by_day[r["date"]][r["provider"]] += r["est_cost_usd"]
+    for r in query(f"SELECT CAST(day_pt AS STRING) d, SUM(units) u FROM `{t('quota_ledger')}` GROUP BY 1"):
+        quota_by_day[r["d"]] += r["u"]  # Pacific-time quota day: the 9,000-unit cap resets at 12:30 IST
     total = sum(by_phase.values())
     p3_gemini = sum(r["est_cost_usd"] for r in ledger if r["phase"] == "P3" and r["provider"] == "vertex_gemini")
     projected = total + sum(PROJECTION.values())
@@ -95,6 +142,12 @@ def main() -> int:
         "project_cap_usd": s.total_project_cap_usd, "project_cap_pct": round(100 * total / s.total_project_cap_usd, 1),
         "projection_remaining": PROJECTION, "projected_total_usd": round(projected, 2),
         "note": "Estimates at list price before free tiers and trial credits. Real spend: Billing -> Reports.",
+        "by_day": {d: {k: round(v, 4) for k, v in sorted(p.items())} for d, p in sorted(by_day.items())},
+        "quota_by_day": {d: int(u) for d, u in sorted(quota_by_day.items())},
+        "quota_cap": s.yt_daily_unit_cap, "trial_credit_usd": TRIAL_CREDIT_USD,
+        "phase_caps": PHASE_CAPS | {"P3": s.gemini_phase_budget_usd_p3},
+        "unit_costs": unit_costs(by_phase),
+        "bigquery_scope": BQ_SCOPE["value"],
     }
     from pitchops.fs import client as fs
 

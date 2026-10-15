@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy Cloud Run Jobs discover / harvest / score from the image built by 30_deploy.sh.
+# Deploy Cloud Run Jobs discover / harvest / score / comments / finops from the image built by 30_deploy.sh.
 # Guardrails: 1 vCPU, 1 GiB, task-timeout 3600s, parallelism 1, max-retries 1, runs as sa-jobs.
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
@@ -14,10 +14,11 @@ job_args() {
   case "$1" in
     discover) echo "-m,jobs.discover,--searches,10,--kw-searches,0" ;;
     comments) echo "-m,jobs.comments,--stage,fetch" ;;  # fetch only (YouTube); classification needs Gemini
+    finops) echo "-m,jobs.finops_report" ;;  # D14: refresh Firestore finops/current for the dashboard
     *) echo "-m,jobs.$1" ;;
   esac
 }
-for job in discover harvest score comments; do
+for job in discover harvest score comments finops; do
   step "Cloud Run Job: $job"
   verb=create; gcloud run jobs describe "$job" --region="$REGION" >/dev/null 2>&1 && verb=update
   gcloud run jobs "$verb" "$job" --image="$IMAGE" --region="$REGION" \

@@ -16,12 +16,16 @@ def client() -> bigquery.Client:
     return bigquery.Client(project=s.gcp_project_id, location=s.gcp_region)
 
 
-def query(sql: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def query(sql: str, params: dict[str, Any] | None = None, max_bytes: int | None = None) -> list[dict[str, Any]]:
+    """max_bytes caps bytes billed (the query fails instead of scanning more) — used by the UI API."""
     cfg = bigquery.QueryJobConfig(
         query_parameters=[
-            bigquery.ScalarQueryParameter(k, _bq_type(k, v), v) for k, v in (params or {}).items()
+            bigquery.ArrayQueryParameter(k, "STRING", v) if isinstance(v, list)
+            else bigquery.ScalarQueryParameter(k, _bq_type(k, v), v) for k, v in (params or {}).items()
         ]
     )
+    if max_bytes:
+        cfg.maximum_bytes_billed = max_bytes
     return [dict(r) for r in client().query(sql, job_config=cfg).result()]
 
 
