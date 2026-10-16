@@ -88,6 +88,21 @@ def shots(script: dict[str, Any], fmt: str, images: list[dict[str, Any]],
     return out
 
 
+def voice_over_heroes(shot_list: list[dict[str, Any]], max_words: int = 24) -> list[dict[str, Any]]:
+    """No dead air over silent Veo property clips: move the next short narration line onto each hero clip as a
+    voice-over (it is spoken over the 3D view with a caption instead of over a photo)."""
+    out = [dict(x) for x in shot_list]
+    for i, sh in enumerate(out):
+        if sh["kind"] != "hero_clip" or sh.get("vo_text"):
+            continue
+        j = next((k for k in range(i + 1, len(out)) if out[k]["kind"] == "narration"
+                  and len(out[k]["text"].split()) <= max_words), None)
+        if j is not None:
+            sh["vo_text"] = out[j]["text"]
+            out.pop(j)
+    return out
+
+
 def cost(shot_list: list[dict[str, Any]], price_audio: float, price_silent: float) -> float:
     return round(sum(s["sec"] * (price_audio if s["audio"] else price_silent) for s in shot_list if s["veo"]), 2)
 

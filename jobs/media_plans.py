@@ -73,6 +73,37 @@ def create(force: bool) -> dict[str, Any]:
     return {"plans_created": made, "properties": len(props), "with_script": len(rows)}
 
 
+def create_series() -> dict[str, Any]:
+    """Plans for the 10-persona series: the script's own avatar, voice-over on hero clips, persona music bed."""
+    s = get_settings()
+    db = fs()
+    imgs = {d.id: d.to_dict().get("images", []) for d in db.collection("property_images").stream()}
+    props = {r["property_id"]: r for r in query(f"""SELECT property_id, area, emirate FROM
+        `{s.table('properties_ranked')}`""")}
+    made = 0
+    for d in db.collection("scripts").where("series", "==", "persona10").stream():
+        sc = d.to_dict()
+        fmt = P.FORMAT_OF[sc["format"]]
+        seller = sc["seller_framework"].split(":", 1)[1]
+        plan_id = f"plan_{sc['property_id'].removeprefix('prop_')}_{fmt}_{seller}"
+        narr_sec = len(words(" ".join(n["text"] for n in sc["current"]["narration"]))) / WPS
+        shot_list = P.voice_over_heroes(P.shots(sc, fmt, imgs.get(sc["property_id"], []), narr_sec))
+        pr = props.get(sc["property_id"], {})
+        plan = {"plan_id": plan_id, "property_id": sc["property_id"], "property_name": sc["property_name"],
+                "area": ", ".join(x for x in (pr.get("area"), pr.get("emirate")) if x), "format": fmt,
+                "script_id": sc["script_id"], "script_version": sc.get("version", 1), "script_status": sc.get("status"),
+                "avatar_id": sc["avatar_id"], "seller_persona": sc["seller_framework"], "music": seller,
+                "series": "persona10", "shots": shot_list,
+                "est_cost_usd": P.cost(shot_list, s.veo_price_audio_per_sec, s.veo_price_silent_per_sec),
+                "est_duration_sec": round(sum(x["sec"] for x in shot_list), 1), "max_sec": P.MAX_SEC[fmt],
+                "images_selected": sum(1 for i in imgs.get(sc["property_id"], []) if i.get("selected")),
+                "state": "DRAFT", "created_at": datetime.now(UTC).isoformat()}
+        plan["plan_hash"] = P.plan_hash(plan)
+        db.collection("video_plans").document(plan_id).set(plan)
+        made += 1
+    return {"series_plans_created": made}
+
+
 def rotate_avatars_for(rows: list[tuple[dict[str, Any], str, dict[str, Any]]]) -> list[str]:
     per = -(-len(rows) // len(AVATARS))
     return P.rotate_avatars([sc.get("avatar_id", "avatar_na") for _, _, sc in rows], list(AVATARS), per)
@@ -98,6 +129,8 @@ def fit_to_limit(plan: dict[str, Any], wd: Path) -> bool:
     av = AVATARS[plan["avatar_id"]]
 
     def length(sh: dict[str, Any]) -> float:
+        if sh["kind"] == "hero_clip" and sh.get("vo_text"):
+            return max(float(sh["sec"]), R.duration(R.tts(sh["vo_text"], av["voice"], wd)) + 0.4)
         if sh.get("veo") or sh["kind"] == "hero_clip":
             return float(sh["sec"])
         if sh.get("text"):
@@ -127,7 +160,11 @@ def render_preview(plan: dict[str, Any], wd: Path, final: bool = False, clips: d
     for i, sh in enumerate(plan["shots"]):
         seg = wd / f"seg_{i:02d}.mp4"
         if i in clips:
-            R.clip_segment(seg, size, clips[i], keep_audio=sh["kind"] != "hero_clip", seconds=sh["sec"])
+            vo = R.tts(sh["vo_text"], av["voice"], wd) if sh.get("vo_text") else None
+            chars += len(sh.get("vo_text") or "")
+            ov = R.caption(wd / f"vo_{i}.png", size, sh["vo_text"]) if sh.get("vo_text") else None
+            secs = max(sh["sec"], R.duration(vo) + 0.4) if vo else sh["sec"]
+            R.clip_segment(seg, size, clips[i], keep_audio=sh["kind"] != "hero_clip", seconds=secs, vo=vo, overlay=ov)
         elif sh["kind"] in ("avatar_intro", "avatar_outro") and final and portrait:
             audio = R.tts(sh["text"], av["voice"], wd)
             chars += len(sh["text"])
@@ -139,6 +176,13 @@ def render_preview(plan: dict[str, Any], wd: Path, final: bool = False, clips: d
             slate = R.card(wd / f"slate_{i}.png", size, f"{av['name']} · {av['languages']}", [f"“{sh['text']}”"],
                            badge="Avatar clip (Veo) - preview placeholder")
             R.segment(seg, size, audio, slate, None, fixed=sh["sec"] if sh.get("veo") else None)
+        elif sh["kind"] == "hero_clip" and sh.get("vo_text"):
+            audio = R.tts(sh["vo_text"], av["voice"], wd)
+            chars += len(sh["vo_text"])
+            still = fetch_image(sh["image_gcs"], wd)
+            ov = R.caption(wd / f"ov_{i}.png", size, sh["vo_text"],
+                           lower_third=None if final else f"Veo {sh['prompt_key']} - preview")
+            R.segment(seg, size, audio, still, ov, motion=i, fixed=max(sh["sec"], R.duration(audio) + 0.4))
         elif sh["kind"] == "hero_clip":
             audio = R.silence(sh["sec"], wd / f"sil_{i}.mp3")
             still = fetch_image(sh["image_gcs"], wd)
@@ -159,7 +203,18 @@ def render_preview(plan: dict[str, Any], wd: Path, final: bool = False, clips: d
                          ["Contact our advisors", f"Permit: {R.PERMIT}", "AI-generated presenter - demo content"])
             R.segment(seg, size, audio, cta, None, pad=0.6)
         parts.append(seg)
-    out = R.concat(parts, wd / ("final.mp4" if final else "preview.mp4"))
+    out = R.concat(parts, wd / ("final_nomusic.mp4" if plan.get("music") else "final.mp4" if final else "preview.mp4"))
+    if plan.get("music"):  # series plans: persona-matched Lyria bed, louder over the property clips
+        from pitchops.media.music import track
+
+        t, loud = 0.0, []
+        for sh, part in zip(plan["shots"], parts, strict=True):
+            d = R.duration(part)
+            if sh["kind"] == "hero_clip":
+                loud.append((t, t + d))
+            t += d
+        out = R.add_music(out, track(plan["music"], wd, plan["plan_id"]), loud,
+                          wd / ("final.mp4" if final else "preview.mp4"))
     return out, chars
 
 
@@ -199,11 +254,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--force", action="store_true")
     p.add_argument("--preview", action="store_true")
     p.add_argument("--plan-id")
+    p.add_argument("--series", action="store_true", help="create the 10-persona series plans")
     a = p.parse_args(argv)
     run_id = a.run_id or new_run_id("plans")
     with job_run("media_plans", run_id, dry_run=a.dry_run) as c:
         if a.create:
             c.update(create(a.force))
+        if a.series:
+            c.update(create_series())
         if a.preview:
             c.update(preview(a.limit, a.plan_id))
     print({"run_id": run_id, **c})

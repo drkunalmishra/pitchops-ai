@@ -97,9 +97,12 @@ def run(args: list[str]) -> None:
 
 
 def duration(path: Path) -> float:
-    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", str(path)],
-                         capture_output=True, text=True, check=True).stdout
-    return float(json.loads(out)["format"]["duration"])
+    for attempt in (1, 2):  # ffprobe occasionally crashes (SIGTRAP) on macOS under load: retry once
+        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", str(path)],
+                           capture_output=True, text=True)
+        if r.returncode == 0:
+            return float(json.loads(r.stdout)["format"]["duration"])
+    raise RuntimeError(f"ffprobe failed on {path}: {r.stderr[-200:]}")
 
 
 @lru_cache(maxsize=1)
@@ -155,11 +158,13 @@ def segment(out: Path, size: tuple[int, int], audio: Path, still: Path | None, o
 
 
 def clip_segment(out: Path, size: tuple[int, int], video: Path, keep_audio: bool, overlay: Path | None = None,
-                 seconds: float | None = None) -> Path:
-    """Normalise a Veo clip to the target size/fps; keep its dialogue audio or add silence (hero clips)."""
+                 seconds: float | None = None, vo: Path | None = None) -> Path:
+    """Normalise a Veo clip to the target size/fps; keep its dialogue audio, or lay a voice-over (vo) / silence under
+    it (hero clips). The last frame is held if the voice-over runs longer than the clip."""
     w, h = size
     dur = seconds or duration(video)
-    vf = f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps={FPS}[bg]"
+    vf = (f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps={FPS},"
+          f"tpad=stop_mode=clone:stop_duration=6[bg]")
     inputs = ["-i", str(video)]
     if overlay:
         inputs += ["-i", str(overlay)]
@@ -168,12 +173,31 @@ def clip_segment(out: Path, size: tuple[int, int], video: Path, keep_audio: bool
         vf += ";[bg]copy[v]"
     if keep_audio:
         amap = ["-map", "0:a?"]
+    elif vo:
+        inputs += ["-i", str(vo)]
+        vf += f";[{2 if overlay else 1}:a]apad[a]"
+        amap = ["-map", "[a]"]
     else:
         inputs += ["-f", "lavfi", "-t", f"{dur:.2f}", "-i", "anullsrc=r=44100:cl=stereo"]
         amap = ["-map", f"{2 if overlay else 1}:a"]
     run(["ffmpeg", "-y", *inputs, "-filter_complex", vf, "-map", "[v]", *amap, "-t", f"{dur:.2f}", "-r", str(FPS),
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ar", "44100",
          "-ac", "2", str(out)])
+    return out
+
+
+def add_music(video: Path, music: Path, loud: list[tuple[float, float]], out: Path, quiet: float = 0.09,
+              up: float = 0.32) -> Path:
+    """Lay a looped music bed under the whole video: quiet under speech, louder during hero clips (loud ranges),
+    1 s fade-in, 2 s fade-out, then loudness-normalise the mix to -14 LUFS."""
+    dur = duration(video)
+    cond = "+".join(f"between(t,{a:.2f},{b:.2f})" for a, b in loud) or "0"
+    m = (f"[1:a]volume='if({cond},{up},{quiet})':eval=frame,afade=t=in:d=1,"
+         f"afade=t=out:st={max(0.0, dur - 2):.2f}:d=2[m];[0:a][m]amix=inputs=2:duration=first:normalize=0,"
+         "loudnorm=I=-14:TP=-1.5:LRA=11[a]")
+    run(["ffmpeg", "-y", "-i", str(video), "-stream_loop", "-1", "-i", str(music), "-filter_complex", m,
+         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-ar", "44100", "-t", f"{dur:.2f}",
+         "-movflags", "+faststart", str(out)])
     return out
 
 

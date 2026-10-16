@@ -52,6 +52,42 @@ def best_links() -> dict[str, dict[str, Any]]:
     return out
 
 
+# 10-persona series: one video per seller persona, each on a property with good official images (owner request)
+SERIES = [  # (seller persona, property_id, format, avatar) — avatars proven with Veo first
+    ("lifestyle", "prop_greenz", "short_9x16", "avatar_sa"),
+    ("education_led", "prop_sobha_central", "walkthrough_16x9", "avatar_eu"),
+    ("status_luxury", "prop_bugatti_residences", "walkthrough_16x9", "avatar_ru"),
+    ("developer_authority", "prop_sobha_sanctuary", "walkthrough_16x9", "avatar_af"),
+    ("financial", "prop_tilal_binghatti", "short_9x16", "avatar_ea"),
+    ("authority", "prop_heights_country_club_and_wellness", "walkthrough_16x9", "avatar_me"),
+    ("fomo_scarcity", "prop_bayn", "short_9x16", "avatar_na"),
+    ("payment_plan_ease", "prop_grand_polo_club_and_resort", "short_9x16", "avatar_sa"),
+    ("risk_reduction", "prop_one_za_abeel", "short_9x16", "avatar_ea"),
+    ("social_proof", "prop_mercedes_benz_places", "walkthrough_16x9", "avatar_ru"),
+]
+
+
+def plan_series() -> list[dict[str, Any]]:
+    props = {p["property_id"]: p for p in query(f"""SELECT property_id, canonical_name, rank, kind, media_candidate,
+        top_buyer_personas, example_video_ids FROM `{t('properties_ranked')}`
+        WHERE property_id IN UNNEST(@ids)""", {"ids": [x[1] for x in SERIES]})}
+    briefs = {r["entity_id"]: r for r in query(f"""SELECT entity_id, name, description FROM `{t('persona_texts')}`
+        WHERE entity_type = 'persona' AND STARTS_WITH(entity_id, 'seller:')""")}
+    links = best_links()
+    items = []
+    for seller, pid, fmt, avatar in SERIES:
+        p = props[pid]
+        buyer = next((b for b in (p["top_buyer_personas"] or []) if b in links and b != "agent_industry"),
+                     next(iter(links)))
+        b = briefs.get(f"seller:{seller}") or {}
+        items.append({"property": p, "buyer": buyer, "format": fmt, "link": links.get(buyer), "avatar": avatar,
+                      "seller": f"seller:{seller}", "series": "persona10",
+                      "seller_brief": f"{b.get('name', seller)} — {b.get('description', '')} Make this pitch style "
+                                      "unmistakable in the hook, the narration and the CTA.",
+                      "script_id": S.script_id(pid, f"{buyer}|{seller}", fmt)})
+    return items
+
+
 def plan() -> list[dict[str, Any]]:
     props = query(f"""SELECT property_id, canonical_name, rank, kind, media_candidate, top_buyer_personas,
             example_video_ids FROM `{t('properties_ranked')}`
@@ -82,8 +118,8 @@ def get_property_facts(property_id: str) -> dict[str, dict[str, Any]]:
                                          {"p": property_id})}
 
 
-def get_persona_insights(link: dict[str, Any], buyer: str) -> list[dict[str, Any]]:
-    ids = [link["seller_persona_id"], link["presenter_persona_id"]] if link else []
+def get_persona_insights(link: dict[str, Any], buyer: str, seller: str | None = None) -> list[dict[str, Any]]:
+    ids = [seller or link["seller_persona_id"], link["presenter_persona_id"]] if link else ([seller] if seller else [])
     rows = query(f"""SELECT entity_id, name, description, texts FROM `{t('persona_texts')}`
         WHERE entity_type = 'persona' AND (entity_id IN UNNEST(@ids) OR STARTS_WITH(entity_id, @b))""",
                  {"ids": ids, "b": f"buyer:{buyer}|"})
@@ -133,16 +169,17 @@ def generate(g: Any, it: dict[str, Any], i: int) -> dict[str, Any]:
     p, link, trace = it["property"], it["link"], []
     facts = get_property_facts(p["property_id"])
     trace.append("get_property_facts")
-    insights = get_persona_insights(link, it["buyer"])
+    insights = get_persona_insights(link, it["buyer"], it.get("seller"))
     trace.append("get_persona_insights")
     hooks = get_top_hooks(p["example_video_ids"])
     trace.append("get_top_hooks")
     questions = get_buyer_questions_and_objections(p["example_video_ids"])
     trace.append("get_buyer_questions_and_objections")
-    avatar = avatar_for(it["buyer"], insights, i)
+    avatar = it.get("avatar") or avatar_for(it["buyer"], insights, i)
     srcs = snippets(hooks)
     ctx = {"format": it["format"], "property_name": p["canonical_name"], "buyer": it["buyer"],
-           "seller": link["seller_persona_id"] if link else "education_led", "avatar_label": S.AVATARS[avatar],
+           "seller": it.get("seller_brief") or (link["seller_persona_id"] if link else "education_led"),
+           "avatar_label": S.AVATARS[avatar],
            "facts": [{"fact_id": k, "field": v["field"], "value": v["value"], "note": v["note"]} for k, v in facts.items()],
            "patterns": insights, "questions": questions, "snippets": [x[:200] for x in srcs]}
     pids = {x["pattern_id"] for x in insights}
@@ -166,7 +203,8 @@ def generate(g: Any, it: dict[str, Any], i: int) -> dict[str, Any]:
     now = datetime.now(UTC).isoformat()
     return {"script_id": it["script_id"], "property_id": p["property_id"], "property_name": p["canonical_name"],
             "buyer_persona": it["buyer"], "persona_link_id": link["link_id"] if link else None,
-            "seller_framework": ctx["seller"], "format": it["format"], "avatar_id": avatar,
+            "seller_framework": it.get("seller") or ctx["seller"], "format": it["format"], "avatar_id": avatar,
+            "series": it.get("series"),
             "status": "draft", "compliance_status": check["status"], "version": 1, "prompt_version": S.PROMPT_VERSION,
             "model_id": s.gemini_model_flash, "tool_trace": trace, "created_at": now, "updated_at": now,
             "current": {**draft, "compliance": check, "content_hash": S.content_hash(draft)}}
@@ -234,12 +272,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--concurrency", type=int, default=2)
     p.add_argument("--seed-demo", action="store_true")
     p.add_argument("--recheck", action="store_true", help="re-run deterministic compliance on all scripts (no LLM)")
+    p.add_argument("--series", action="store_true", help="the 10-persona series (one script per seller persona)")
     a = p.parse_args(argv)
     if a.recheck:
         print(recheck())
         return 0
     s = get_settings()
-    items = plan()
+    items = plan_series() if a.series else plan()
     from pitchops.fs import client as fs
 
     existing = {d.id for d in fs().collection("scripts").select([]).stream()}
