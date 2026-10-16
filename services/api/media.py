@@ -31,6 +31,10 @@ class PlanEdit(BaseModel):
     drop_hero: int | None = None  # index of a hero clip to remove (cost drops)
 
 
+class AvatarPick(BaseModel):
+    candidate_id: str
+
+
 class Decision(BaseModel):
     note: str | None = None
 
@@ -144,6 +148,34 @@ def media_router(require_user: Any) -> APIRouter:
         docs = {d.id: d.to_dict() for d in fs().collection("avatars").stream()}
         return [{"avatar_id": k, **v, **{x: docs.get(k, {}).get(x) for x in ("candidates", "approved_candidate", "status")}}
                 for k, v in AVATARS.items()]
+
+    @r.get("/media/avatar/{avatar_id}/{candidate_id}")
+    def avatar_image(avatar_id: str, candidate_id: str, user: dict[str, Any] = Depends(require_user)) -> Response:
+        d = fs().collection("avatars").document(avatar_id).get().to_dict() or {}
+        c = next((x for x in d.get("candidates") or [] if x["id"] == candidate_id), None)
+        if not c:
+            raise HTTPException(404, "candidate not found")
+        from PIL import Image
+
+        im = Image.open(io.BytesIO(blob_bytes(c["gcs"]))).convert("RGB")
+        im.thumbnail((640, 640))
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=85)
+        return Response(buf.getvalue(), media_type="image/jpeg", headers={"Cache-Control": "private, max-age=3600"})
+
+    @r.post("/media/avatars/{avatar_id}/approve")
+    def avatar_approve(avatar_id: str, body: AvatarPick, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+        ref = fs().collection("avatars").document(avatar_id)
+        d = ref.get().to_dict() or {}
+        c = next((x for x in d.get("candidates") or [] if x["id"] == body.candidate_id), None)
+        if not c:
+            raise HTTPException(404, "candidate not found")
+        now = datetime.now(UTC).isoformat()
+        ref.update({"approved_candidate": c["id"], "portrait_gcs": c["gcs"], "status": "approved",
+                    "approved_by": user.get("uid"), "approved_at": now})
+        fs().collection("audit").add({"action": "avatar_approve", "avatar_id": avatar_id, "candidate": c["id"],
+                                      "uid": user.get("uid"), "at": now})
+        return {"avatar_id": avatar_id, "approved_candidate": c["id"]}
 
     # ---- plans --------------------------------------------------------------------------------------------------
     @r.get("/media/plans")

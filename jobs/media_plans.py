@@ -114,7 +114,11 @@ def fit_to_limit(plan: dict[str, Any], wd: Path) -> bool:
     return dropped
 
 
-def render_preview(plan: dict[str, Any], wd: Path, final: bool = False) -> tuple[Path, int]:
+def render_preview(plan: dict[str, Any], wd: Path, final: bool = False, clips: dict[int, Path] | None = None,
+                   portrait: Path | None = None) -> tuple[Path, int]:
+    """Compose the video. Preview: placeholders for Veo shots. Final: real Veo clips where present; a failed or non-Veo
+    presenter shot becomes the approved portrait + TTS, a failed hero clip becomes photo motion (fallback ladder)."""
+    clips = clips or {}
     size = R.SIZES[plan["format"]]["final" if final else "preview"]
     av = AVATARS[plan["avatar_id"]]
     parts: list[Path] = []
@@ -122,7 +126,14 @@ def render_preview(plan: dict[str, Any], wd: Path, final: bool = False) -> tuple
     lower = f"{plan['property_name']} · {plan['area']}" if plan.get("area") else plan["property_name"]
     for i, sh in enumerate(plan["shots"]):
         seg = wd / f"seg_{i:02d}.mp4"
-        if sh["kind"] in ("avatar_intro", "avatar_outro"):
+        if i in clips:
+            R.clip_segment(seg, size, clips[i], keep_audio=sh["kind"] != "hero_clip", seconds=sh["sec"])
+        elif sh["kind"] in ("avatar_intro", "avatar_outro") and final and portrait:
+            audio = R.tts(sh["text"], av["voice"], wd)
+            chars += len(sh["text"])
+            ov = R.caption(wd / f"ov_{i}.png", size, sh["text"], lower_third=f"{av['name']} · {R.BRAND}")
+            R.segment(seg, size, audio, portrait, ov, motion=i)
+        elif sh["kind"] in ("avatar_intro", "avatar_outro"):
             audio = R.tts(sh["text"], av["voice"], wd)
             chars += len(sh["text"])
             slate = R.card(wd / f"slate_{i}.png", size, f"{av['name']} · {av['languages']}", [f"“{sh['text']}”"],
@@ -131,7 +142,7 @@ def render_preview(plan: dict[str, Any], wd: Path, final: bool = False) -> tuple
         elif sh["kind"] == "hero_clip":
             audio = R.silence(sh["sec"], wd / f"sil_{i}.mp3")
             still = fetch_image(sh["image_gcs"], wd)
-            ov = R.caption(wd / f"ov_{i}.png", size, "", lower_third=f"Veo {sh['prompt_key']} - preview")
+            ov = None if final else R.caption(wd / f"ov_{i}.png", size, "", lower_third=f"Veo {sh['prompt_key']} - preview")
             R.segment(seg, size, audio, still, ov, pad=0, motion=i)
         elif sh["kind"] == "narration":
             audio = R.tts(sh["text"], av["voice"], wd)

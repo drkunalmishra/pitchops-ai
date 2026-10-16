@@ -11,7 +11,9 @@ import json
 import subprocess
 import tempfile
 import textwrap
+from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -100,13 +102,21 @@ def duration(path: Path) -> float:
     return float(json.loads(out)["format"]["duration"])
 
 
+@lru_cache(maxsize=1)
+def _tts_client() -> Any:
+    """One REST client per process: gRPC channels stall when the process also forks ffmpeg subprocesses."""
+    from google.cloud import texttospeech as T
+
+    return T.TextToSpeechClient(transport="rest")
+
+
 def tts(text: str, voice: str, cache: Path) -> Path:
     """Cloud TTS (Neural2) MP3, cached by text+voice hash. Counted by the caller for FinOps (characters)."""
     from google.cloud import texttospeech as T
 
     p = cache / f"tts_{hashlib.sha1((voice + text).encode()).hexdigest()[:16]}.mp3"
     if not p.exists():
-        c = T.TextToSpeechClient()
+        c = _tts_client()
         res = c.synthesize_speech(input=T.SynthesisInput(text=text),
                                   voice=T.VoiceSelectionParams(language_code=voice[:5], name=voice),
                                   audio_config=T.AudioConfig(audio_encoding=T.AudioEncoding.MP3, speaking_rate=1.0))
@@ -141,6 +151,29 @@ def segment(out: Path, size: tuple[int, int], audio: Path, still: Path | None, o
     run(["ffmpeg", "-y", *inputs, "-i", str(audio), "-filter_complex", vf + f";[{2 if overlay else 1}:a]apad[a]",
          "-map", "[v]", "-map", "[a]", "-t", f"{dur:.2f}", "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast",
          "-crf", "26", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ar", "44100", "-ac", "2", str(out)])
+    return out
+
+
+def clip_segment(out: Path, size: tuple[int, int], video: Path, keep_audio: bool, overlay: Path | None = None,
+                 seconds: float | None = None) -> Path:
+    """Normalise a Veo clip to the target size/fps; keep its dialogue audio or add silence (hero clips)."""
+    w, h = size
+    dur = seconds or duration(video)
+    vf = f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps={FPS}[bg]"
+    inputs = ["-i", str(video)]
+    if overlay:
+        inputs += ["-i", str(overlay)]
+        vf += ";[bg][1:v]overlay=0:0[v]"
+    else:
+        vf += ";[bg]copy[v]"
+    if keep_audio:
+        amap = ["-map", "0:a?"]
+    else:
+        inputs += ["-f", "lavfi", "-t", f"{dur:.2f}", "-i", "anullsrc=r=44100:cl=stereo"]
+        amap = ["-map", f"{2 if overlay else 1}:a"]
+    run(["ffmpeg", "-y", *inputs, "-filter_complex", vf, "-map", "[v]", *amap, "-t", f"{dur:.2f}", "-r", str(FPS),
+         "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ar", "44100",
+         "-ac", "2", str(out)])
     return out
 
 

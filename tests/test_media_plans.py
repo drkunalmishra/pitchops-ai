@@ -28,3 +28,20 @@ def test_shots_and_cost() -> None:
     assert sum(x["kind"] == "hero_clip" for x in s16) == 2 and sum(x["kind"] == "hero_clip" for x in s9) == 1
     assert cost(s16, 0.15, 0.10) == 4.0 and cost(s9, 0.15, 0.10) == 2.0
     assert plan_hash({"shots": s16}) != plan_hash({"shots": s9})
+
+
+def test_generator_refuses_unapproved_or_changed_plans() -> None:
+    import pytest
+
+    from jobs.media_generate import NotApproved, check_runnable
+
+    shots16 = shots(SCRIPT, "16x9", IMGS, 40)
+    plan = {"plan_id": "p", "state": "PREVIEW_READY", "shots": shots16, "property_id": "x", "format": "16x9",
+            "script_id": "s", "script_version": 1, "avatar_id": "avatar_in"}
+    with pytest.raises(NotApproved):
+        check_runnable(plan)
+    plan |= {"state": "APPROVED", "approval": {"plan_hash": plan_hash(plan)}}
+    check_runnable(plan)  # exact approved plan runs
+    plan["avatar_id"] = "avatar_eu"  # edited after approval
+    with pytest.raises(NotApproved):
+        check_runnable(plan)
