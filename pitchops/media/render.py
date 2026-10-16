@@ -202,6 +202,16 @@ def qc(path: Path, fmt: str, max_sec: float) -> list[str]:
                         capture_output=True, text=True).stderr
     if "black_start" in bd:
         errs.append("black frames > 0.5 s")
+    if v:  # letterbox / pillarbox: cropdetect finds a content area clearly smaller than the frame
+        cd = subprocess.run(["ffmpeg", "-i", str(path), "-vf", "cropdetect=limit=24:round=2:reset=0", "-frames:v", "900",
+                             "-an", "-f", "null", "-"], capture_output=True, text=True).stderr
+        import re
+
+        crops = re.findall(r"crop=(\d+):(\d+):", cd)
+        if crops:
+            cw, ch = map(int, crops[len(crops) // 2])
+            if cw < 0.9 * v["width"] or ch < 0.9 * v["height"]:
+                errs.append(f"letterboxed segment (content {cw}x{ch} in {v['width']}x{v['height']})")
     return errs
 
 
