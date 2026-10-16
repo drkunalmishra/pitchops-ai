@@ -206,3 +206,28 @@ export function useParam(name: string): string | null {
   useEffect(() => setV(new URLSearchParams(window.location.search).get(name)), [name]);
   return v;
 }
+
+export type Cited = { text: string; video_ids: string[] };
+
+/** A statement with its evidence video links (every generated statement cites >= 1 video). */
+export function CitedLine({ c }: { c: Cited }) {
+  return (
+    <span>
+      {c.text}{" "}
+      {c.video_ids.map((id, i) => (
+        <Link key={id} href={`/video/?id=${id}`} className="text-xs text-teal-400 hover:underline">
+          [{i + 1}]
+        </Link>
+      ))}
+    </span>
+  );
+}
+
+export const STATUS_STYLE: Record<string, string> = {
+  PASS: "bg-teal-900/70 text-teal-200",
+  WARN: "bg-amber-900/60 text-amber-200",
+  BLOCK: "bg-red-900/70 text-red-200",
+  approved: "bg-teal-600 text-white",
+  rejected: "bg-navy-800 text-slate-400",
+  draft: "bg-navy-800 text-slate-200",
+};

@@ -170,8 +170,10 @@ def review_decide(channel_id: str, body: ReviewDecision, user: dict[str, Any] = 
 
 from services.api.explore import admin_router  # noqa: E402
 from services.api.explore import router as explore_router  # noqa: E402
+from services.api.studio import studio_router  # noqa: E402
 
 v1.include_router(explore_router)
 v1.include_router(admin_router(require_user))
+v1.include_router(studio_router(require_user))
 app.include_router(v1, prefix="/v1")
 app.include_router(v1, prefix="/api/v1")

@@ -167,7 +167,7 @@ def classify_batch(g: Any, batch: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [{**x, "video_id": vid[x["comment_id"]], "model_id": res.model_id} for x in res.data["comments"]]
 
 
-def classify(run_id: str, limit: int | None) -> dict[str, Any]:
+def classify(run_id: str, limit: int | None, concurrency: int = CONCURRENCY) -> dict[str, Any]:
     from pitchops.gemini.client import GeminiClient
 
     s = get_settings()
@@ -177,7 +177,7 @@ def classify(run_id: str, limit: int | None) -> dict[str, Any]:
     out: list[dict[str, Any]] = []
     ok = failed = 0
     status = "ok"
-    with ThreadPoolExecutor(CONCURRENCY) as ex:
+    with ThreadPoolExecutor(concurrency) as ex:
         futs = [ex.submit(classify_batch, g, b) for b in batches]
         try:
             for f in as_completed(futs):
@@ -276,6 +276,7 @@ def main(argv: list[str] | None = None) -> int:
     p = base_parser("comments")
     p.add_argument("--estimate", action="store_true")
     p.add_argument("--stage", default="all", choices=["fetch", "classify", "summarise", "all"])
+    p.add_argument("--concurrency", type=int, default=CONCURRENCY)
     a = p.parse_args(argv)
     if a.estimate:
         print(estimate(a.limit))
@@ -285,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
         if a.stage in ("fetch", "all"):
             c.update(fetch(run_id, a.limit))
         if a.stage in ("classify", "all"):
-            c.update(classify(run_id, None))
+            c.update(classify(run_id, None, a.concurrency))
         if a.stage in ("summarise", "all"):
             c.update(summarise(run_id))
             assert_no_raw_identifiers()

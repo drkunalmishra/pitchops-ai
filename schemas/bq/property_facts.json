@@ -1,0 +1,80 @@
+{
+  "table": "property_facts",
+  "fields": [
+    {
+      "name": "fact_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "property_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "field",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "value",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "quote",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "source_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "source_url",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "video_ids",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "channel_count",
+      "type": "INT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "effective_date",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "expires_at",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "confidence",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "note",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ]
+}

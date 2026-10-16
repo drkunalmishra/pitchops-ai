@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/personas/", label: "Personas" },
   { href: "/properties/", label: "Properties" },
   { href: "/companies/", label: "Companies" },
+  { href: "/studio/", label: "Script Studio" },
   { href: "/finops/", label: "FinOps" },
   { href: "/review/", label: "Review queue" },
 ];

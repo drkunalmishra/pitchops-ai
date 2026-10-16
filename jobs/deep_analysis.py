@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from typing import Any
@@ -42,10 +43,11 @@ def pending(limit: int | None, retry_review: bool = False) -> list[dict[str, Any
         SELECT d.video_id, d.company_id, v.title, v.duration_sec
         FROM `{t('deep_selection')}` d
         JOIN `{t('v_videos_relevant')}` v USING (video_id)
+        LEFT JOIN `{t('company_shortlist')}` sl ON sl.company_id = d.company_id
         LEFT JOIN `{t('video_analysis')}` a ON a.video_id = d.video_id AND a.prompt_version = @pv
              AND a.status IN {done}
         WHERE a.video_id IS NULL AND IFNULL(v.duration_sec, 0) > 0
-        ORDER BY d.company_id, d.rank_in_company""", {"pv": deep_video.PROMPT_VERSION})
+        ORDER BY IFNULL(sl.rank, 999), d.company_id, d.rank_in_company""", {"pv": deep_video.PROMPT_VERSION})
     return rows[:limit] if limit else rows
 
 
@@ -159,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--estimate", action="store_true")
     p.add_argument("--retry-review", action="store_true", help="also re-run videos currently in needs_review")
     p.add_argument("--concurrency", type=int, default=CONCURRENCY)
+    p.add_argument("--refused-stop", type=int, default=REFUSED_STOP, help="stop after N consecutive 403 refusals")
+    p.add_argument("--pause", type=float, default=0.0, help="seconds to wait before each video call (gentle mode)")
     a = p.parse_args(argv)
     run_id = a.run_id or new_run_id("deep")
     s = get_settings()
@@ -174,7 +178,11 @@ def main(argv: list[str] | None = None) -> int:
         ok = review = failed = 0
         refused_streak = 0
         with ThreadPoolExecutor(a.concurrency) as ex:
-            futs = [ex.submit(analyse, g, v) for v in todo]
+            def paced(v: dict[str, Any]) -> dict[str, Any]:
+                time.sleep(a.pause)
+                return analyse(g, v)
+
+            futs = [ex.submit(paced, v) for v in todo]
             try:
                 for f in as_completed(futs):
                     try:
@@ -185,8 +193,8 @@ def main(argv: list[str] | None = None) -> int:
                         failed += 1
                         log("deep_failed", severity="WARNING", error=f"{type(e).__name__}: {e}"[:300])
                         refused_streak = refused_streak + 1 if "PERMISSION_DENIED" in str(e) else 0
-                        if refused_streak >= REFUSED_STOP:
-                            raise PolicyRefused(f"{REFUSED_STOP} consecutive 403 policy refusals") from e
+                        if refused_streak >= a.refused_stop:
+                            raise PolicyRefused(f"{a.refused_stop} consecutive 403 policy refusals") from e
                         continue
                     refused_streak = 0
                     ok += r["status"] == "succeeded"

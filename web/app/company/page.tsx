@@ -1,6 +1,6 @@
 "use client";
 
-import { Bars, Card, Page, Status, Tile, VideoCard, compact, fmt, human, useApi, useParam, type Video } from "@/components/ui";
+import { Bars, Card, CitedLine, Page, Status, Tile, VideoCard, compact, fmt, human, useApi, useParam, type Cited, type Video } from "@/components/ui";
 
 type Mix = { code: string; w: number; n: number };
 type Detail = {
@@ -21,7 +21,28 @@ type Detail = {
   mix: Record<string, Mix[]>;
   gaps: string[];
   corpus: { sales_pressure: number | null };
+  report: {
+    report_type: string;
+    model_id: string;
+    markdown: string;
+    report: {
+      headline: string;
+      persona_statement: Cited;
+      funnel: { awareness: Cited; consideration: Cited; decision: Cited };
+      strengths: Cited[];
+      gaps: Cited[];
+      opportunities: Cited[];
+    };
+  } | null;
 };
+
+function download(name: string, md: string) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([md], { type: "text/markdown" }));
+  a.download = `${name.replace(/[^a-z0-9]+/gi, "_")}_report.md`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 export default function CompanyPage() {
   const id = useParam("id");
@@ -43,13 +64,53 @@ export default function CompanyPage() {
             <Tile label="Sales pressure" value={fmt(c.sales_pressure, 1)} sub={`corpus ${fmt(data.corpus.sales_pressure, 1)}`} />
             <Tile label="Registered brokers" value={fmt(c.brokers)} />
           </div>
-          <Card title="Persona statement">
-            <p className="text-sm leading-relaxed text-slate-200">
-              Mostly sells with <b>{top("seller")}</b> tactics to <b>{top("buyer")}</b> buyers, typically as{" "}
-              <b>{top("format")}</b> videos. Based on {fmt(c.videos)} relevant videos
-              {c.deep ? `, ${fmt(c.deep)} of them deep-analysed` : " (text tags only)"}.
-            </p>
-          </Card>
+          {data.report ? (
+            <Card title={`Report — internal draft (${data.report.report_type}, ${data.report.model_id})`}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <p className="text-base font-medium text-white">{data.report.report.headline}</p>
+                <button
+                  onClick={() => download(c.name, data.report!.markdown)}
+                  className="rounded-lg border border-navy-700 px-3 py-1 text-xs text-slate-200 hover:border-teal-500"
+                >
+                  Download Markdown
+                </button>
+              </div>
+              <div className="mt-3 grid gap-4 text-sm text-slate-200 md:grid-cols-2">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Persona statement</div>
+                  <p className="mt-1"><CitedLine c={data.report.report.persona_statement} /></p>
+                  <div className="mt-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Funnel</div>
+                  <ul className="mt-1 space-y-1">
+                    {(["awareness", "consideration", "decision"] as const).map((k) => (
+                      <li key={k}>
+                        <b className="text-slate-300">{human(k)}:</b> <CitedLine c={data.report!.report.funnel[k]} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="space-y-3">
+                  {(["strengths", "gaps", "opportunities"] as const).map((k) => (
+                    <div key={k}>
+                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">{human(k)}</div>
+                      <ul className="mt-1 list-disc space-y-1 pl-4">
+                        {data.report!.report[k].map((x, i) => (
+                          <li key={i}><CitedLine c={x} /></li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          ) : (
+            <Card title="Persona statement">
+              <p className="text-sm leading-relaxed text-slate-200">
+                Mostly sells with <b>{top("seller")}</b> tactics to <b>{top("buyer")}</b> buyers, typically as{" "}
+                <b>{top("format")}</b> videos. Based on {fmt(c.videos)} relevant videos
+                {c.deep ? `, ${fmt(c.deep)} of them deep-analysed` : " (text tags only)"}.
+              </p>
+            </Card>
+          )}
           <div className="grid gap-6 md:grid-cols-3">
             {(["seller", "buyer", "format"] as const).map((l) => (
               <Card key={l} title={`${l === "format" ? "Formats" : `${human(l)} personas`} (weighted videos)`}>
@@ -58,7 +119,7 @@ export default function CompanyPage() {
             ))}
           </div>
           {data.gaps.length > 0 && (
-            <Card title="Gaps vs the corpus">
+            <Card title="Rule-based gaps vs the corpus">
               <ul className="list-disc space-y-1 pl-5 text-sm text-slate-200">
                 {data.gaps.map((g) => (
                   <li key={g}>{g}</li>

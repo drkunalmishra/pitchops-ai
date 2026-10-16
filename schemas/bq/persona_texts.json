@@ -1,0 +1,55 @@
+{
+  "table": "persona_texts",
+  "fields": [
+    {
+      "name": "entity_type",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "entity_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "description",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "texts",
+      "type": "JSON",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "video_ids",
+      "type": "STRING",
+      "mode": "REPEATED"
+    },
+    {
+      "name": "model_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "prompt_version",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "run_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ]
+}

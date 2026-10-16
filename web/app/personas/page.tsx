@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Band, Card, Page, Pill, Status, VideoCard, fmt, human, useApi, type Video } from "@/components/ui";
+import { Band, Card, CitedLine, Page, Pill, Status, VideoCard, fmt, human, useApi, type Cited, type Video } from "@/components/ui";
 
 type Persona = {
   persona_id: string;
@@ -22,9 +22,10 @@ type Persona = {
   attributes: { top_triggers?: Record<string, number>; top_origins?: Record<string, number> } | null;
   works_with: string[];
   avoid: string[];
+  texts: { typical_hooks: Cited[]; typical_ctas: Cited[]; what_works: Cited[]; what_to_avoid: Cited[] } | null;
 };
 type Cell = { seller: string; buyer: string; videos: number; deep_videos: number; trending: number | null; sales_pressure: number | null };
-type Matrix = { sellers: string[]; buyers: string[]; cells: Cell[] };
+type Matrix = { sellers: string[]; buyers: string[]; cells: Cell[]; names?: Record<string, string> };
 type CellDetail = { videos: Video[]; hooks: string[]; ctas: string[]; questions: string[]; objections: string[] };
 
 const TABS = [
@@ -82,7 +83,30 @@ function PersonaCard({ p }: { p: Persona }) {
           ))}
         </div>
       )}
-      {p.works_with.length > 0 && (
+      {p.texts && (
+        <div className="mt-3 space-y-2 text-xs text-slate-300">
+          {(
+            [
+              ["Typical hooks", p.texts.typical_hooks, "text-slate-400"],
+              ["Typical CTAs", p.texts.typical_ctas, "text-slate-400"],
+              ["What works", p.texts.what_works, "text-teal-400"],
+              ["What to avoid", p.texts.what_to_avoid, "text-amber-300"],
+            ] as const
+          ).map(([title, items, cls]) => (
+            <div key={title}>
+              <div className={`font-semibold ${cls}`}>{title}</div>
+              <ul className="mt-1 list-disc pl-4">
+                {items.map((c, i) => (
+                  <li key={i}>
+                    <CitedLine c={c} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+      {!p.texts && p.works_with.length > 0 && (
         <div className="mt-3 text-xs">
           <div className="font-semibold text-teal-400">What works</div>
           <ul className="mt-1 list-disc pl-4 text-slate-300">
@@ -92,7 +116,7 @@ function PersonaCard({ p }: { p: Persona }) {
           </ul>
         </div>
       )}
-      {p.avoid.length > 0 && (
+      {!p.texts && p.avoid.length > 0 && (
         <div className="mt-2 text-xs">
           <div className="font-semibold text-amber-300">Watch out</div>
           <ul className="mt-1 list-disc pl-4 text-slate-300">
@@ -143,7 +167,7 @@ function MatrixView({ m, onPick, picked }: { m: Matrix; onPick: (s: string, b: s
             {m.sellers.map((s) => (
               <tr key={s}>
                 <th scope="row" className="sticky left-0 whitespace-nowrap bg-navy-900 p-1 pr-3 text-left font-normal text-slate-300">
-                  {human(s)}
+                  {m.names?.[s] || human(s)}
                 </th>
                 {m.buyers.map((b) => {
                   const c = byKey.get(`${s}|${b}`);
@@ -255,8 +279,8 @@ export default function PersonasPage() {
             ))}
           </div>
           <p className="mt-4 text-xs text-slate-400">
-            Band A–E = percentile of 0.5·OPI median + 0.5·trending median; faded when confidence &lt; 0.4. Names are
-            code-generated until Gemini naming runs.
+            Band A–E = percentile of 0.5·OPI median + 0.5·trending median; faded when confidence &lt; 0.4. Names and
+            descriptions are written by Gemini from the aggregated stats; [n] links are the evidence videos.
           </p>
         </div>
       )}

@@ -108,7 +108,8 @@ def overview() -> dict[str, Any]:
 
 # ---- personas ------------------------------------------------------------------------------------------------------
 def _personas() -> list[dict[str, Any]]:
-    ps = rows(f"""SELECT p.persona_id, p.layer, p.code, p.name, p.description, p.motive, p.member_count,
+    ps = rows(f"""SELECT p.persona_id, p.layer, p.code, COALESCE(pt.name, p.name) name,
+            COALESCE(pt.description, p.description) description, pt.texts, p.motive, p.member_count,
             p.example_video_ids, p.attributes, p.weighted_evidence, p.deep_videos, p.text_only_videos,
             p.channel_count, p.company_count, p.name_source,
             r.rating_band, r.confidence, r.score, r.opi_median, r.trending_median, r.sales_pressure_median,
@@ -116,6 +117,7 @@ def _personas() -> list[dict[str, Any]]:
             r.top_questions, r.deep_n
         FROM `{t('personas')}` p LEFT JOIN `{t('persona_ratings')}` r
           ON r.entity_type = 'persona' AND r.entity_id = p.persona_id AND r.persona_db_version = p.persona_db_version
+        LEFT JOIN `{t('persona_texts')}` pt ON pt.entity_type = 'persona' AND pt.entity_id = p.persona_id
         WHERE p.persona_db_version = {pv()} ORDER BY p.weighted_evidence DESC""")
     links = rows(f"""SELECT l.seller_persona_id s, l.buyer_persona_id b, l.presenter_persona_id f, l.video_count n,
             r.score, r.confidence
@@ -170,8 +172,10 @@ def _matrix() -> dict[str, Any]:
         buyers[c["buyer"]] += c["videos"]
         for k in ("trending", "sales_pressure"):
             c[k] = round(c[k], 3) if c[k] is not None else None
+    names = {r["entity_id"]: r["name"] for r in rows(f"""SELECT entity_id, name FROM `{t('persona_texts')}`
+        WHERE entity_type = 'persona'""")}
     return {"sellers": [s for s, _ in sellers.most_common()], "buyers": [b for b, _ in buyers.most_common(14)],
-            "cells": cells}
+            "cells": cells, "names": names}
 
 
 @router.get("/explore/matrix")
@@ -326,7 +330,10 @@ def company_detail(company_id: str) -> dict[str, Any]:
         pressures = [x["sales_pressure"] for x in all_c if x["sales_pressure"] is not None]
         corpus = {"sales_pressure": round(sum(pressures) / len(pressures), 2) if pressures else None}
         deep = [v for v in vids if v["deep"]]
+        rep = rows(f"""SELECT report, markdown, report_type, model_id, ingested_at FROM `{t('company_reports')}`
+            WHERE company_id = @c AND status = 'succeeded'""", {"c": company_id})
         return {"company": c, "channels": chans, "videos": vids, "mix": _mix(company_id),
+                "report": rep[0] if rep else None,
                 "gaps": gaps(c, corpus, deep), "corpus": corpus}
 
     return cached(f"company:{company_id}", run)
