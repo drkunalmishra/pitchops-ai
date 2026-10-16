@@ -87,12 +87,12 @@ def corpus(props: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def fetch_pages(start: str, name: str) -> list[tuple[str, str]]:
-    """Home/official page + up to 4 same-site pages whose URL contains the project's words. Text only."""
+def fetch_pages(start: str, name: str) -> list[tuple[str, str, str]]:
+    """Home/official page + up to 4 same-site pages whose URL contains the project's words: (url, text, html)."""
     words = [w for w in re.findall(r"[a-z0-9]+", name.lower()) if len(w) > 2 and w not in ("the", "by", "and")]
     host = urlparse(start).netloc
     rp = urllib.robotparser.RobotFileParser()
-    pages: list[tuple[str, str]] = []
+    pages: list[tuple[str, str, str]] = []
     with httpx.Client(timeout=15, follow_redirects=True, headers={"User-Agent": user_agent()}) as c:
         try:
             rob = c.get(f"{urlparse(start).scheme}://{host}/robots.txt")
@@ -112,7 +112,7 @@ def fetch_pages(start: str, name: str) -> list[tuple[str, str]]:
             if r.status_code >= 400 or "html" not in r.headers.get("content-type", ""):
                 continue
             text, links = F.html_text(r.text)
-            pages.append((str(r.url), text))
+            pages.append((str(r.url), text, r.text))
             for href in links:
                 u = urljoin(str(r.url), href).split("#")[0]
                 if urlparse(u).netloc.endswith(host.removeprefix("www.")) and words and \
@@ -124,7 +124,7 @@ def fetch_pages(start: str, name: str) -> list[tuple[str, str]]:
 def official(g: Any, p: dict[str, Any], url: str) -> list[dict[str, Any]]:
     s = get_settings()
     pages = fetch_pages(url, p["canonical_name"])
-    project_pages = [(u, txt) for u, txt in pages if p["canonical_name"].split()[0].lower() in txt.lower()]
+    project_pages = [(u, txt) for u, txt, _ in pages if p["canonical_name"].split()[0].lower() in txt.lower()]
     out: list[dict[str, Any]] = []
     today = date.today().isoformat()
     for u, txt in project_pages[:3]:

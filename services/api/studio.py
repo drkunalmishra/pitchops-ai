@@ -18,6 +18,21 @@ from pitchops.workflow import scripts as S
 STUDIO_CAP = 5.0  # shares the P6 phase cap
 
 
+
+class Edit(BaseModel):
+    current: dict[str, Any]
+    note: str | None = None
+
+
+class Regen(BaseModel):
+    index: int
+    instruction: str | None = None
+
+
+class Decision(BaseModel):
+    note: str | None = None
+
+
 def fs() -> Any:
     from pitchops.fs import client
 
@@ -81,9 +96,6 @@ def studio_router(require_user: Any) -> APIRouter:
         return {**doc, "versions": sorted(versions, key=lambda v: v.get("version", 0)),
                 "facts": facts_for(doc["property_id"]), "approval": approval.to_dict() if approval.exists else None}
 
-    class Edit(BaseModel):
-        current: dict[str, Any]
-        note: str | None = None
 
     @r.post("/scripts/{script_id}/versions")
     def edit(script_id: str, body: Edit, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
@@ -138,9 +150,6 @@ def studio_router(require_user: Any) -> APIRouter:
         audit("compliance", script_id, user, status=res["status"])
         return res
 
-    class Regen(BaseModel):
-        index: int
-        instruction: str | None = None
 
     @r.post("/scripts/{script_id}/regenerate-line")
     def regenerate_line(script_id: str, body: Regen, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
@@ -162,8 +171,6 @@ def studio_router(require_user: Any) -> APIRouter:
         return {"index": body.index, "text": out.data["text"], "fact_ids": line.get("fact_ids") or [],
                 "pattern_ids": line.get("pattern_ids") or []}
 
-    class Decision(BaseModel):
-        note: str | None = None
 
     @r.post("/scripts/{script_id}/approve")
     def approve(script_id: str, body: Decision, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:

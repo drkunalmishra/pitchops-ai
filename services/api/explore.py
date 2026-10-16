@@ -24,6 +24,11 @@ _cache: dict[str, tuple[float, Any]] = {}
 router = APIRouter()
 
 
+
+class Relevance(BaseModel):
+    is_relevant: bool
+
+
 def t(name: str) -> str:
     return get_settings().table(name)
 
@@ -401,8 +406,6 @@ def admin_router(require_user: Any) -> APIRouter:
                 WHERE status = 'needs_review' ORDER BY ingested_at DESC LIMIT 200"""),
         }
 
-    class Relevance(BaseModel):
-        is_relevant: bool
 
     @r.post("/admin/relevance/{video_id}")
     def set_relevance(video_id: str, body: Relevance, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:

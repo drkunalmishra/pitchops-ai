@@ -18,6 +18,8 @@ dependencies = [
   "uvicorn[standard]>=0.30",
   "firebase-admin>=6.5",
   "jsonschema>=4.23",
+  "pillow>=10",
+  "python-multipart>=0.0.9",
 ]
 
 [dependency-groups]

@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     firebase_config_json: str = ""
     contact_email: str = ""
     cors_origins: str = Field(default="")
+    # P7 media (D15/D16): verify prices in Cloud Billing; these are deliberately conservative estimates
+    veo_model_id: str = "veo-3.1-fast-generate-001"
+    veo_price_audio_per_sec: float = 0.15
+    veo_price_silent_per_sec: float = 0.10
+    imagen_model_id: str = "imagen-4.0-generate-001"
+    imagen_price: float = 0.04
+    media_budget_usd: float = 120.0
     admin_emails: str = ""  # comma-separated; Firebase users with these emails (or custom claim admin) see Admin/QA
 
     @property

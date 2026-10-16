@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/properties/", label: "Properties" },
   { href: "/companies/", label: "Companies" },
   { href: "/studio/", label: "Script Studio" },
+  { href: "/media/", label: "Media" },
   { href: "/finops/", label: "FinOps" },
   { href: "/review/", label: "Review queue" },
 ];
