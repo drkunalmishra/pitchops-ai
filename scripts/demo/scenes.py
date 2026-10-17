@@ -56,3 +56,8 @@ SCENES = [
      "text": "PitchOps AI runs on Firebase Hosting and Auth, Firestore, Cloud Run, and Gemini on Vertex AI. From "
              "public content to a compliant pitch, in minutes. Thank you."},
 ]
+
+if os.environ.get("DEMO_SCENES") == "investor":  # 8-minute investor walkthrough
+    from scenes_investor import SCENES, VOICE  # noqa: E402,F401,F811
+
+    DATA = DATA / "investor"

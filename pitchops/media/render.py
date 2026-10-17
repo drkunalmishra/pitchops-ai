@@ -97,7 +97,7 @@ def run(args: list[str]) -> None:
 
 
 def duration(path: Path) -> float:
-    for attempt in (1, 2):  # ffprobe occasionally crashes (SIGTRAP) on macOS under load: retry once
+    for _attempt in (1, 2):  # ffprobe occasionally crashes (SIGTRAP) on macOS under load: retry once
         r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", str(path)],
                            capture_output=True, text=True)
         if r.returncode == 0:

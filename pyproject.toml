@@ -42,6 +42,7 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.ruff.lint.per-file-ignores]
 "services/api/*.py" = ["B008"]
 "scripts/gen_bq_schemas.py" = ["E741"]
+"scripts/demo/*.py" = ["E501"]  # narration strings and scratch paths
 
 [tool.mypy]
 python_version = "3.12"

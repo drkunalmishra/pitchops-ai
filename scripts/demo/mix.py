@@ -52,14 +52,23 @@ def card(path, title, sub, lines):
         k = y / H
         d.line([(0, y), (W, y)], fill=(int(7 + 11 * k), int(18 + 22 * k), int(38 + 39 * k)))
     bar = [(66, 133, 244), (52, 168, 83), (251, 188, 4), (234, 67, 53)]
+    bullets = len(lines) >= 3
+    top = 230 if bullets else 300
     for i, c in enumerate(bar):
-        d.rectangle([W // 2 - 240 + i * 120, 300, W // 2 - 240 + (i + 1) * 120 - 8, 308], fill=c)
-    d.text((W // 2, 420), title, font=f(110, True), fill=(240, 245, 250), anchor="mm")
-    d.text((W // 2, 530), sub, font=f(44), fill=(45, 212, 191), anchor="mm")
-    y = 650
-    for ln in lines:
-        d.text((W // 2, y), ln, font=f(36), fill=(200, 215, 230), anchor="mm")
-        y += 58
+        d.rectangle([W // 2 - 240 + i * 120, top, W // 2 - 240 + (i + 1) * 120 - 8, top + 8], fill=c)
+    d.text((W // 2, top + 120), title, font=f(104, True), fill=(240, 245, 250), anchor="mm")
+    d.text((W // 2, top + 228), sub, font=f(44), fill=(45, 212, 191), anchor="mm")
+    y = top + 350
+    if bullets:
+        x0 = W // 2 - max(int(d.textlength(ln, font=f(38))) for ln in lines) // 2 - 30
+        for i, ln in enumerate(lines):
+            d.ellipse([x0, y - 9, x0 + 18, y + 9], fill=bar[i % 4])
+            d.text((x0 + 44, y), ln, font=f(38), fill=(215, 225, 238), anchor="lm")
+            y += 72
+    else:
+        for ln in lines:
+            d.text((W // 2, y), ln, font=f(36), fill=(200, 215, 230), anchor="mm")
+            y += 58
     img.save(path)
     return path
 
@@ -98,7 +107,10 @@ def main():
         out = WORK / f"{s['id']}.mp4"
         if s["kind"] == "card":
             total = dur(AUDIO / f"{s['id']}.mp3") + LEAD + PAD + 0.6
-            if s["id"] == "s00_title":
+            if "card" in s:
+                c = s["card"]
+                png = card(WORK / f"{s['id']}.png", c["title"], c["sub"], c["lines"])
+            elif s["id"] == "s00_title":
                 png = card(WORK / "title.png", "PitchOps AI", "Team SellItR8  ·  AI Builder Cup 2026",
                            ["From brokers' public videos to an evidence-rated persona playbook",
                             "and a compliant AI sales pitch, in minutes."])
@@ -109,7 +121,9 @@ def main():
                             "Team SellItR8 — Kunal Mishra · Manjeet Malwan"])
             ai, af = seg_audio(s["id"], total)
             sh("ffmpeg", "-y", "-loop", "1", "-t", f"{total:.3f}", "-i", png, *ai, "-filter_complex",
-               f"[0:v]fade=t=in:st=0:d=0.6,fade=t=out:st={total - 0.6:.3f}:d=0.6,format=yuv420p[v];{af}",
+               f"[0:v]scale=3840:2160,zoompan=z='1+0.05*on/({total:.3f}*{FPS})':x='iw/2-(iw/zoom/2)':"
+               f"y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={FPS},"
+               f"fade=t=in:st=0:d=0.6,fade=t=out:st={total - 0.6:.3f}:d=0.6,format=yuv420p[v];{af}",
                "-map", "[v]", "-map", "[a]", "-t", f"{total:.3f}", *ENC, out)
         elif s["kind"] == "rec":
             m = marks[s["id"]]
@@ -122,7 +136,9 @@ def main():
             total = s["dur"]
             src = VID / s["file"]
             sh("ffmpeg", "-y", "-ss", s["ss"], "-t", total, "-i", src, "-filter_complex",
-               f"[0:v]scale={W}:{H},fade=t=in:st=0:d=0.4,fade=t=out:st={total - 0.6}:d=0.6[v];"
+               f"[0:v]split[a0][b0];[a0]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
+               f"boxblur=30:2,eq=brightness=-0.15[bg];[b0]scale=-2:{H}[fg];[bg][fg]overlay=(W-w)/2:0,"
+               f"fade=t=in:st=0:d=0.4,fade=t=out:st={total - 0.6}:d=0.6[v];"
                f"[0:a]afade=t=out:st={total - 1}:d=1,aformat=sample_rates=48000:channel_layouts=stereo[a]",
                "-map", "[v]", "-map", "[a]", "-t", total, *ENC, out)
             clip_windows.append((t, t + total))

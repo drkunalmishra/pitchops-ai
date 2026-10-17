@@ -101,6 +101,60 @@ class Tour:
         await self.click(cell.first, 1.5)
         await self.scroll(650, 2.5)
 
+    async def overview_long(self):
+        await self.overview_top()
+        await self.overview_funnel()
+        for label in ["Top seller persona", "Top buyer persona", "Most-discussed project", "Avg sales pressure"]:
+            await asyncio.sleep(1.8)
+            await self.hover_el(self.p.get_by_text(label, exact=False).first, 20)
+
+    async def personas_long(self):
+        await self.personas()
+        await asyncio.sleep(2)
+        await self.scroll(500, 3)
+        await asyncio.sleep(1.5)
+        await self.p.mouse.wheel(0, -3000)
+        await asyncio.sleep(1)
+        cell = self.p.locator("td button").filter(has_text="4.6k").first
+        await self.click(cell, 1.5)
+        await self.scroll(700, 3)
+
+    async def company_long(self):
+        await self.go("/companies/", 1.5)
+        for i in range(4):
+            await self.hover_el(self.p.locator("a[href*='/company/']").nth(i), 15)
+            await asyncio.sleep(0.6)
+        await self.click(self.p.get_by_role("link", name="PALLADIUM REALTY REAL ESTATE L.L.C").first, 2.5)
+        await self.hover_el(self.p.get_by_text("Persona statement", exact=False).first, 25)
+        await asyncio.sleep(2)
+        await self.hover_el(self.p.get_by_text("Download Markdown").first, 25)
+        await asyncio.sleep(1.5)
+        await self.scroll(600, 4)
+
+    async def _persona_tab(self, label, scroll_px):
+        if "/personas" not in self.p.url:
+            await self.go("/personas/", 2)
+        tab = self.p.get_by_role("tab", name=label)
+        await self.click(tab, 1.5)
+        cards = self.p.locator("[role=tabpanel] > *")
+        for i in range(3):
+            await self.hover_el(cards.nth(i), 20)
+            await asyncio.sleep(1.4)
+        await self.scroll(scroll_px, 4)
+        for i in range(6, 9):
+            if await cards.nth(i).count():
+                await self.hover_el(cards.nth(i), 20)
+                await asyncio.sleep(1.2)
+
+    async def persona_tab_seller(self):
+        await self.go("/personas/", 2)
+        await self._persona_tab("Seller personas", 500)
+
+    async def persona_tab_buyer(self):
+        await self.p.mouse.wheel(0, -900)
+        await asyncio.sleep(0.8)
+        await self._persona_tab("Buyer personas", 600)
+
     async def company(self):
         await self.go("/companies/", 1.5)
         await self.click(self.p.get_by_role("link", name="PALLADIUM REALTY REAL ESTATE L.L.C").first, 2.5)
