@@ -23,6 +23,16 @@ VIEW = {"width": 1600, "height": 900}
 DSF = 1.2  # 1600x900 CSS → 1920x1080 frames, larger readable text
 PAD = 1.8  # seconds of hold after each narration
 
+REC_CSS = """
+(() => { const st = document.createElement('style');
+  st.textContent = 'table th.sticky, table td.sticky { position: static !important; } .overflow-x-auto { overflow: visible !important; }';
+  const add = () => document.head && document.head.appendChild(st);
+  if (document.readyState !== 'loading') add(); else addEventListener('DOMContentLoaded', add); })();
+"""
+WARM = ["/dashboard/", "/personas/", "/companies/", "/company/?id=co_01525", "/properties/", "/studio/",
+        "/script/?id=s_demo_guaranteed_returns", "/media/", "/avatars/",
+        "/plan/?id=plan_bugatti_residences_16x9_status_luxury", "/finops/"]
+
 CURSOR = """
 (() => { const add = () => { if (document.getElementById('__cur')) return;
   const c = document.createElement('div'); c.id='__cur';
@@ -131,28 +141,35 @@ class Tour:
         await asyncio.sleep(1.5)
         await self.scroll(600, 4)
 
+    async def jump_to(self, loc, offset=-120):
+        """Instant scroll (no smooth wheel): large card grids re-raster cleanly between frames."""
+        try:
+            await loc.evaluate(f"(el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + {offset})")
+            await asyncio.sleep(0.6)
+        except Exception as e:
+            print("  jump miss:", str(e).splitlines()[0][:100])
+
     async def _persona_tab(self, label, scroll_px):
         if "/personas" not in self.p.url:
             await self.go("/personas/", 2)
         tab = self.p.get_by_role("tab", name=label)
+        await self.jump_to(tab, -200)
         await self.click(tab, 1.5)
         cards = self.p.locator("[role=tabpanel] > *")
-        for i in range(3):
-            await self.hover_el(cards.nth(i), 20)
-            await asyncio.sleep(1.4)
-        await self.scroll(scroll_px, 4)
-        for i in range(6, 9):
-            if await cards.nth(i).count():
-                await self.hover_el(cards.nth(i), 20)
-                await asyncio.sleep(1.2)
+        for row in (0, 3):  # first two rows of cards
+            if not await cards.nth(row).count():
+                break
+            await self.jump_to(cards.nth(row), -40)
+            for i in range(row, row + 3):
+                if await cards.nth(i).count():
+                    await self.hover_el(cards.nth(i).locator("div").first, 20)
+                    await asyncio.sleep(1.6)
 
     async def persona_tab_seller(self):
         await self.go("/personas/", 2)
         await self._persona_tab("Seller personas", 500)
 
     async def persona_tab_buyer(self):
-        await self.p.mouse.wheel(0, -900)
-        await asyncio.sleep(0.8)
         await self._persona_tab("Buyer personas", 600)
 
     async def company(self):
@@ -199,9 +216,20 @@ class Tour:
         await self.scroll(350, 1.5)
         await self.go("/avatars/", 1.2)
         await self.scroll(500, 2)
+        await self.open_plan()
+
+    async def open_plan(self):
+        """Open the Bugatti plan and wait until its final video can play (it streams through the API)."""
+        await self.go("/plan/?id=plan_bugatti_residences_16x9_status_luxury", 0.5)
+        try:
+            await self.p.wait_for_function("(() => { const v = document.querySelector('video'); "
+                                           "return v && v.readyState >= 2; })()", timeout=20000)
+        except Exception:
+            print("  video not ready in 20s")
 
     async def plan(self):
-        await self.go("/plan/?id=plan_bugatti_residences_16x9_status_luxury", 1.0)
+        if "/plan/" not in self.p.url:
+            await self.open_plan()
         await self.hover_el(self.p.locator("video").first, 30)
 
     async def finops(self):
@@ -234,15 +262,25 @@ async def record():
     for f in frames_dir.glob("*.jpg"):
         f.unlink()
     async with async_playwright() as pw:
-        ctx = await pw.chromium.launch_persistent_context(PROFILE, channel="chrome", headless=False, viewport=VIEW,
+        # headless: full-size off-screen rendering (a headed window larger than the display leaves stale regions)
+        ctx = await pw.chromium.launch_persistent_context(PROFILE, channel="chrome", headless=True, viewport=VIEW,
                                                           device_scale_factor=DSF)
         await ctx.add_init_script(CURSOR)
+        await ctx.add_init_script(REC_CSS)
         page = ctx.pages[0] if ctx.pages else await ctx.new_page()
         tour = Tour(page)
         await page.goto(SITE + "/dashboard/", wait_until="networkidle")
         await asyncio.sleep(3)
         if "/dashboard" not in page.url:
             raise SystemExit("not signed in — run: python record.py --login")
+        for path in WARM:  # warm the API caches so no scene opens on "Loading…"
+            try:
+                await page.goto(SITE + path, wait_until="networkidle", timeout=60000)
+                await asyncio.sleep(1.5)
+            except Exception as e:
+                print("  warm miss:", path, str(e).splitlines()[0][:80])
+        await page.goto(SITE + "/dashboard/", wait_until="networkidle")
+        await asyncio.sleep(2)
         cdp = await ctx.new_cdp_session(page)
         frames: list[tuple[float, str]] = []
 
