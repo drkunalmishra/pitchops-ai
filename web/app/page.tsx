@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   GoogleAuthProvider,
   onAuthStateChanged,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
@@ -63,6 +64,15 @@ export default function LoginPage() {
             {busy ? "Signing in…" : "Sign in"}
           </button>
         </form>
+        <button
+          onClick={() => run(() => signInAnonymously(auth))} disabled={busy}
+          className="mt-5 w-full rounded-lg border border-teal-500/60 bg-teal-500/10 py-2.5 text-sm font-semibold text-teal-300 hover:bg-teal-500/20 disabled:opacity-60"
+        >
+          Judge access (one click, no password)
+        </button>
+        <p className="mt-2 text-center text-xs text-slate-500">
+          For AI Builder Cup evaluators. Opens the full prototype as a guest; actions are audit-logged.
+        </p>
         <div className="my-5 flex items-center gap-3 text-xs text-slate-500">
           <div className="h-px flex-1 bg-navy-700" /> or <div className="h-px flex-1 bg-navy-700" />
         </div>

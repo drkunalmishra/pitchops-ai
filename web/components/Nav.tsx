@@ -53,7 +53,7 @@ export default function Nav({ user }: { user: User }) {
         </nav>
       </div>
       <div className="flex items-center gap-3 text-sm text-slate-300">
-        <span className="max-w-48 truncate">{user.email}</span>
+        <span className="max-w-48 truncate">{user.isAnonymous ? "Judge (guest access)" : user.email}</span>
         <button
           onClick={() => signOut(auth)}
           className="rounded-lg border border-navy-700 px-3 py-1.5 hover:border-teal-500 hover:text-white"
