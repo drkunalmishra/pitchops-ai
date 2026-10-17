@@ -8,9 +8,9 @@ compliant sales pitch in minutes.* Built for the AI Builder Cup 2026 (Future of 
 ## What it does
 1. **Persona Intelligence Engine.** It starts from the DLD broker register (33,565 brokers, 9,862 companies). It
    matched 1,141 YouTube channels and harvested 227,483 videos with the YouTube Data API. The analysis keeps only
-   relevant UAE content from the last 24 months (68,940 videos):
+   relevant UAE content from the last 24 months (65,898 videos):
    - Gemini Flash-Lite text-tagged 106k videos.
-   - Gemini Flash watched 493 trending videos straight from the YouTube URL, with no download.
+   - Gemini Flash watched 485 trending videos straight from the YouTube URL, with no download.
    - 16,271 comments were classified for buying intent.
    - The output is a Persona DB of 139 seller, buyer and format personas with 4,206 rated links, plus 386 company
      reports and 2,375 ranked properties.
