@@ -3,7 +3,7 @@
 *From 33,000 registered brokers' public content to an evidence-rated persona playbook — and from that playbook to a
 compliant sales pitch in minutes.* Built for the AI Builder Cup 2026 (Future of Work & Enterprise Productivity).
 
-**Live:** https://pitchops-ai-2026.web.app (login required)
+**Live:** https://pitchops-ai-2026.web.app (login required) · **Demo video (3:26):** https://youtu.be/TVgMJCuMalM ([download MP4](https://github.com/drkunalmishra/pitchops-ai/releases/download/v1.0-submission/SellItR8_PitchOps_AI_Demo.mp4)) · **Team SellItR8:** Kunal Mishra, Manjeet Malwan
 
 ## What it does
 1. **Persona Intelligence Engine.** It starts from the DLD broker register (33,565 brokers, 9,862 companies). It

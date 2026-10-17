@@ -4,6 +4,7 @@
 |---|---|
 | Deployed prototype | https://pitchops-ai-2026.web.app (sign in with the demo account given in the submission form) |
 | GitHub repository | https://github.com/drkunalmishra/pitchops-ai |
+| Demo video | https://youtu.be/TVgMJCuMalM (MP4 also attached to the `v1.0-submission` release) |
 | Theme | Future of Work & Enterprise Productivity |
 
 ## Brief description
