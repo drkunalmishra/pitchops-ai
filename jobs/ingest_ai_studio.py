@@ -112,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     p = base_parser("ingest_ai_studio")
     p.add_argument("--long", action="store_true", help="load long_*.json (videos > 5 min, first 5 min only)")
     a = p.parse_args(argv)
-    run_id = a.run_id or new_run_id("aistudio")
+    run_id = a.run_id or new_run_id("ai-studio")
     dur = durations()
     rows = load_files("long_*.json" if a.long else "batch_*.json")
     if a.limit:
@@ -130,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
         seen.add(vid)
         if vid not in dur:
             stats["unknown_video"] += 1
-            log("aistudio_unknown_video", severity="WARNING", video_id=vid, file=r["_file"])
+            log("ai_studio_unknown_video", severity="WARNING", video_id=vid, file=r["_file"])
             continue
         if a.long and dur[vid] <= deep_video.FULL_MAX_SEC:
             stats["not_long"] += 1
