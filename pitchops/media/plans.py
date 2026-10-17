@@ -13,9 +13,10 @@ VEO_SEC = 8
 CTA_SEC = 3
 STATES = ["DRAFT", "PREVIEW_READY", "AWAITING_APPROVAL", "APPROVED", "GENERATING", "COMPOSING", "REVIEW", "DONE",
           "REJECTED", "FAILED"]
-HERO_TAGS = {"16x9": [("aerial_orbit", ("aerial", "skyline_view", "exterior_facade")),
-                      ("interior_glide", ("interior_living", "pool_amenity", "lobby", "exterior_facade"))],
-             "9x16": [("aerial_approach", ("aerial", "exterior_facade", "skyline_view"))]}
+HeroTags = dict[str, list[tuple[str, tuple[str, ...]]]]
+HERO_TAGS: HeroTags = {"16x9": [("aerial_orbit", ("aerial", "skyline_view", "exterior_facade")),
+                               ("interior_glide", ("interior_living", "pool_amenity", "lobby", "exterior_facade"))],
+                      "9x16": [("aerial_approach", ("aerial", "exterior_facade", "skyline_view"))]}
 
 
 def rotate_avatars(preferred: list[str], avatars: list[str], per: int) -> list[str]:

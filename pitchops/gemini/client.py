@@ -152,7 +152,7 @@ class GeminiClient:
         model = model or self.s.embedding_model_id
         self.budget.check()
         t0 = time.monotonic()
-        resp = self.embed_client.models.embed_content(model=model, contents=texts)
+        resp = self.embed_client.models.embed_content(model=model, contents=list(texts))  # type: ignore[arg-type]
         ms = int((time.monotonic() - t0) * 1000)
         vecs = [list(e.values or []) for e in (resp.embeddings or [])]
         tin = sum(int(getattr(getattr(e, "statistics", None), "token_count", 0) or 0)

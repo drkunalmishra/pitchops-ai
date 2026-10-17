@@ -6,6 +6,7 @@ from pathlib import Path
 
 # outputs (Chrome login profile, audio, frames, renders) live OUTSIDE the repo
 DATA = Path(os.environ.get("DEMO_DATA", "/private/tmp/claude-501/-Users-mamtamishra-Desktop-Project-BigSell-PitchOPsAI/0ed26401-5975-47aa-8f54-6b0a9df801f4/scratchpad/demo"))
+BASE = DATA  # shared across cuts (Chrome login profile)
 SITE = "https://pitchops-ai-2026.web.app"
 VOICE = "en-US-Chirp3-HD-Charon"
 

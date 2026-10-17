@@ -63,6 +63,7 @@ def track(key: str, cache: Path, run_id: str) -> Path:
                                    "run_id": run_id, "ingested_at": now}])
         if ok or "recitation" not in r.text.lower():
             break
+    assert r is not None
     r.raise_for_status()
     data = base64.b64decode(r.json()["predictions"][0]["bytesBase64Encoded"])
     upload_bytes(f"media/music/{key}.wav", data, "audio/wav")

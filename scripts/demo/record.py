@@ -15,9 +15,9 @@ from playwright.async_api import async_playwright
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
-from scenes import DATA, SCENES, SITE  # noqa: E402
+from scenes import BASE, DATA, SCENES, SITE  # noqa: E402
 
-PROFILE = DATA / ".chrome-profile"
+PROFILE = BASE / ".chrome-profile"
 OUT = DATA / "rec"
 VIEW = {"width": 1600, "height": 900}
 DSF = 1.2  # 1600x900 CSS → 1920x1080 frames, larger readable text

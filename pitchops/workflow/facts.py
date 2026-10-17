@@ -63,7 +63,7 @@ def corpus_facts(property_id: str, mentions: list[dict[str, Any]], claims: list[
             vote("payment plan", norm_plan(c.get("quote") or ""), c)
         if c.get("claim_type") == "price":
             vote("starting price", norm_price(c.get("quote") or ""), c)
-    out = []
+    out: list[dict[str, Any]] = []
     best: dict[str, tuple[int, str]] = {}
     for (field, value), s in votes.items():
         n = len(s["ch"])
