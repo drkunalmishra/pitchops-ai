@@ -15,7 +15,7 @@ minutes instead of days.**
 We started from the Dubai Land Department register (33,565 brokers, 9,862 companies). From it we matched 1,141
 YouTube channels and harvested 227,483 videos through the YouTube Data API. All analysis is restricted to relevant
 UAE real-estate content from the last 24 months (65,898 videos). Gemini text-tagged 106k videos. It then watched
-493 top-trending videos directly from their YouTube URLs, with nothing downloaded, and extracted hooks, sales
+485 top-trending videos directly from their YouTube URLs, with nothing downloaded, and extracted hooks, sales
 tactics, target buyers, claims and compliance risks with timestamped evidence. We also classified 16,271 comments
 for buying intent. The result is a Persona Database of 139 seller, buyer and format personas and 4,206 rated links
 between them, plus reports for 386 companies and a ranking of 2,375 properties.
