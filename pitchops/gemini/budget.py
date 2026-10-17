@@ -15,6 +15,9 @@ from typing import Protocol
 from zoneinfo import ZoneInfo
 
 IST = ZoneInfo("Asia/Kolkata")
+# Media jobs share llm_calls but have their own caps (media budget + project cap, pitchops.media.plans.budget_check);
+# they must not use up the Gemini text budget.
+MEDIA_JOBS = ("p7_veo", "p7_imagen", "p7_lyria", "demo_tts")
 
 
 class BudgetExhausted(Exception):
@@ -73,5 +76,6 @@ class BigQuerySpendStore:
             "SELECT COALESCE(SUM(cost_usd_est),0) AS total, "
             "COALESCE(SUM(IF(DATE(ts, 'Asia/Kolkata') = @d, cost_usd_est, 0)),0) AS today, "
             "COALESCE(SUM(IF(STARTS_WITH(job, @p), cost_usd_est, 0)),0) AS phase "
-            f"FROM `{get_settings().table('llm_calls')}`", {"d": day_ist.isoformat(), "p": phase_prefix or "\u0000"})
+            f"FROM `{get_settings().table('llm_calls')}` WHERE job NOT IN UNNEST(@media)",
+            {"d": day_ist.isoformat(), "p": phase_prefix or "\u0000", "media": list(MEDIA_JOBS)})
         return float(rows[0]["total"]), float(rows[0]["today"]), float(rows[0]["phase"])
